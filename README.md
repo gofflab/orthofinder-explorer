@@ -31,17 +31,36 @@ mount the path into `/data`.
 Static assets are stored in the `static-assets` volume so the ingest job can
 update `app/static/species_colors.json` for the web container.
 
+### Container layout
+Services:
+- `web`: Flask app served by Gunicorn on `:8000` inside the Compose network.
+- `nginx`: Reverse proxy on host port `8080`, forwards to `web:8000`.
+- `ingest`: One-off job (profile `ingest`) that runs the ingest CLI.
+
+Volumes:
+- `orthofinder-data`: Persisted SQLite DB at `/data/orthofinder_new.db`.
+- `static-assets`: Persisted static assets at `/app/app/static` shared by `web`
+  and `ingest` so color palettes stay in sync after ingestion.
+
 ### Ingest data with Docker
 Use the ingest service to load a new Orthofinder dataset into the shared volume:
 ```bash
 docker compose --profile ingest run --rm \
   -v /path/to/OrthoFinder/Results:/input:ro \
-  ingest
+  ingest --config /config/orthofinder_ingest.docker.json
 ```
 
 Update `config/orthofinder_ingest.docker.json` with your actual dataset folder
 name (`input_dir`) and metadata (`dataset_name`) before running the ingest. To
 use a different config, append `--config /config/your_file.json` to the command.
+
+The `input_dir` value is the container path, so the host results directory must
+be mounted to `/input` (as shown above). A helper script is available:
+```bash
+bash scripts/ingest_docker.sh /path/to/OrthoFinder/Results Results_Feb21
+```
+The helper script runs against the repository's Compose project so it can be
+invoked from any working directory.
 
 ## Documentation
 Docs are built with Sphinx and live in `docs/`.
