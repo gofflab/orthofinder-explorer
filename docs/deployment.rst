@@ -62,7 +62,10 @@ To restart the web container after a rebuild or ingest:
 Local-only note
 ---------------
 
-For local development without TLS, update ``deploy/nginx.conf`` to remove the
-HTTPS server block and change the Nginx ports in ``docker-compose.yml`` to use a
-non-privileged port (for example ``8080:80``). You can also remove the
-``/etc/letsencrypt`` mount in that case.
+For local development without TLS, use the provided override file:
+
+.. code-block:: bash
+
+   docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+
+Then visit ``http://localhost:8080``.

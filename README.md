@@ -57,6 +57,17 @@ For local development without TLS, update `deploy/nginx.conf` and the Nginx
 ports in `docker-compose.yml` to use a non-privileged port (for example
 `8080:80`) and remove the `/etc/letsencrypt` mount.
 
+### Local Docker override
+For local testing without TLS, use the provided override file:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml up --build
+```
+
+Then visit:
+```
+http://localhost:8080
+```
+
 ## Local development (non-Docker)
 Use the ingestion script to build or append to the SQLite database without editing code paths.
 
