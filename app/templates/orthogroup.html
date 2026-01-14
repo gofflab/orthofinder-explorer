@@ -22,6 +22,19 @@
     <br>
     <label for="heightRange">Height</label>
     <input type="range" id="heightRange" min="400" max="10000" value="2400">
+    <br>
+    <label for="tipSpacingRange">Tip Spacing</label>
+    <input type="range" id="tipSpacingRange" min="8" max="40" value="18">
+    <br>
+    <label for="fontSizeRange">Font Size</label>
+    <input type="range" id="fontSizeRange" min="8" max="24" value="15">
+    <br>
+    <label for="branchScaleRange">Branch Scale</label>
+    <input type="range" id="branchScaleRange" min="0.5" max="2" value="1" step="0.1">
+    <br>
+    <label><input type="checkbox" id="autoHeightToggle" checked> Auto Height</label>
+    <label><input type="checkbox" id="alignTipsToggle" checked> Align Tips</label>
+    <label><input type="checkbox" id="zoomToggle"> Enable Zoom</label>
 </div>
 <div>
   <svg id="tree-container"></svg>
@@ -35,22 +48,69 @@
 
 <script type="text/javascript">
   document.addEventListener("DOMContentLoaded", function() {
-      let tree = createTreeUpdated("{{ orthogroup.gene_tree | safe }}");
-      console.log(tree);
-      //console.log(tree.parsed_tags);
-      //console.log(tree.getTips());
-      console.log(tree.get_parsed_tags())
-      //tree.show();
-      
+      const newickData = "{{ orthogroup.gene_tree | safe }}";
+      let tree;
+      let speciesColorMap = null;
+
       const widthRange = document.getElementById('widthRange');
       const heightRange = document.getElementById('heightRange');
-      // Add event listener to width and height range sliders
-      widthRange.addEventListener('input', function() {
-        tree = createTreeUpdated("{{ orthogroup.gene_tree | safe }}", widthRange.value, heightRange.value);
+      const tipSpacingRange = document.getElementById('tipSpacingRange');
+      const fontSizeRange = document.getElementById('fontSizeRange');
+      const branchScaleRange = document.getElementById('branchScaleRange');
+      const autoHeightToggle = document.getElementById('autoHeightToggle');
+      const alignTipsToggle = document.getElementById('alignTipsToggle');
+      const zoomToggle = document.getElementById('zoomToggle');
+
+      function syncHeightControl() {
+        heightRange.disabled = autoHeightToggle.checked;
+      }
+
+      function renderTree() {
+        const width = parseInt(widthRange.value, 10);
+        const height = parseInt(heightRange.value, 10);
+        const tipSpacing = parseInt(tipSpacingRange.value, 10);
+        const fontSize = parseInt(fontSizeRange.value, 10);
+        const branchScale = parseFloat(branchScaleRange.value);
+        const autoHeight = autoHeightToggle.checked;
+        const alignTips = alignTipsToggle.checked;
+        const zoom = zoomToggle.checked;
+
+        tree = createTreeUpdated(newickData, width, height, {
+          fontSize: fontSize,
+          tipSpacing: tipSpacing,
+          autoHeight: autoHeight,
+          branchScale: branchScale,
+          alignTips: alignTips,
+          zoom: zoom,
+          speciesColorMap: speciesColorMap,
+        });
+      }
+
+      function bindRender(input) {
+        input.addEventListener('input', renderTree);
+      }
+
+      [widthRange, heightRange, tipSpacingRange, fontSizeRange, branchScaleRange].forEach(bindRender);
+      [autoHeightToggle, alignTipsToggle, zoomToggle].forEach(function(input) {
+        input.addEventListener('change', renderTree);
       });
-      heightRange.addEventListener('input', function() {
-        tree = createTreeUpdated("{{ orthogroup.gene_tree | safe }}", widthRange.value, heightRange.value);
-      });
+      autoHeightToggle.addEventListener('change', syncHeightControl);
+      syncHeightControl();
+
+      fetch("{{ url_for('static', filename='species_colors.json') }}")
+        .then(function(response) {
+          if (!response.ok) {
+            return null;
+          }
+          return response.json();
+        })
+        .then(function(data) {
+          speciesColorMap = data || null;
+          renderTree();
+        })
+        .catch(function() {
+          renderTree();
+        });
   });
 </script>
 {% endblock %}
