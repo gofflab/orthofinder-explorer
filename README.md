@@ -28,8 +28,9 @@ http://localhost:8080
 The SQLite database is persisted in the `orthofinder-data` volume. To use a
 custom database file, update `ORTHOFINDER_DB_PATH` in `docker-compose.yml` and
 mount the path into `/data`.
-Static assets are stored in the `static-assets` volume so the ingest job can
-update `app/static/species_colors.json` for the web container.
+The ingest job writes `species_colors.json` into `/data`, and the web app serves
+it from there via `/species-colors.json` (configured by
+`ORTHOFINDER_SPECIES_COLORS_PATH` in `docker-compose.yml`).
 
 ### Container layout
 Services:
@@ -39,8 +40,7 @@ Services:
 
 Volumes:
 - `orthofinder-data`: Persisted SQLite DB at `/data/orthofinder_new.db`.
-- `static-assets`: Persisted static assets at `/app/app/static` shared by `web`
-  and `ingest` so color palettes stay in sync after ingestion.
+  `species_colors.json` lives alongside the DB at `/data/species_colors.json`.
 
 ### Ingest data with Docker
 Use the ingest service to load a new Orthofinder dataset into the shared volume:

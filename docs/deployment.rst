@@ -18,9 +18,9 @@ Services:
 Volumes:
 
 - ``orthofinder-data``: Persistent SQLite database at
-  ``/data/orthofinder_new.db``.
-- ``static-assets``: Shared static assets directory at ``/app/app/static`` so
-  the ingest job can update ``species_colors.json`` for the running web app.
+  ``/data/orthofinder_new.db``. The ingest job also writes
+  ``/data/species_colors.json``, which the app serves from ``/species-colors.json``
+  based on ``ORTHOFINDER_SPECIES_COLORS_PATH``.
 
 Build and run
 -------------

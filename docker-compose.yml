@@ -3,9 +3,9 @@ services:
     build: .
     environment:
       - ORTHOFINDER_DB_PATH=/data/orthofinder_new.db
+      - ORTHOFINDER_SPECIES_COLORS_PATH=/data/species_colors.json
     volumes:
       - orthofinder-data:/data
-      - static-assets:/app/app/static
     expose:
       - "8000"
 
@@ -26,9 +26,7 @@ services:
     command: ["--config", "/config/orthofinder_ingest.docker.json"]
     volumes:
       - orthofinder-data:/data
-      - static-assets:/app/app/static
       - ./config:/config:ro
 
 volumes:
   orthofinder-data:
-  static-assets:

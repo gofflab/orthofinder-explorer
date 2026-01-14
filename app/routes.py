@@ -1,4 +1,5 @@
 import logging
+import os
 from flask import render_template, request, redirect, url_for, send_file
 from sqlalchemy import func
 from . import db
@@ -23,6 +24,19 @@ def register_routes(app):
         app.logger.warning('testing warning log')
         print("Index route accessed")
         return render_template('index.html')
+
+    @app.route('/species-colors.json')
+    def species_colors():
+        """Serve the species color map JSON from the configured data path.
+
+        This endpoint decouples the color palette from the bundled static
+        assets so Docker deployments can store the JSON alongside the database
+        in a shared data volume without shadowing `/app/app/static`.
+        """
+        species_colors_path = app.config.get('SPECIES_COLORS_PATH')
+        if not species_colors_path or not os.path.exists(species_colors_path):
+            return "", 404
+        return send_file(species_colors_path)
 
     @app.route('/orthogroup/<string:orthogroup_id>')
     def orthogroup(orthogroup_id):
