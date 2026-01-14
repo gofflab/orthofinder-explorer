@@ -33,7 +33,7 @@ docker compose up --build
 
 The app will be available at:
 ```
-http://localhost:8080
+https://cephexplorer.gofflab.org
 ```
 
 The SQLite database is persisted in the `orthofinder-data` volume. To use a
@@ -46,12 +46,16 @@ it from there via `/species-colors.json` (configured by
 ### Container layout
 Services:
 - `web`: Flask app served by Gunicorn on `:8000` inside the Compose network.
-- `nginx`: Reverse proxy on host port `8080`, forwards to `web:8000`.
+- `nginx`: Reverse proxy on host ports `80`/`443`, forwards to `web:8000`.
 - `ingest`: One-off job (profile `ingest`) that runs the ingest CLI.
 
 Volumes:
 - `orthofinder-data`: Persisted SQLite DB at `/data/orthofinder_new.db`.
   `species_colors.json` lives alongside the DB at `/data/species_colors.json`.
+
+For local development without TLS, update `deploy/nginx.conf` and the Nginx
+ports in `docker-compose.yml` to use a non-privileged port (for example
+`8080:80`) and remove the `/etc/letsencrypt` mount.
 
 ## Local development (non-Docker)
 Use the ingestion script to build or append to the SQLite database without editing code paths.

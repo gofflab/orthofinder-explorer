@@ -10,7 +10,7 @@ Container layout
 Services:
 
 - ``web``: Builds the app image and runs Gunicorn on port 8000.
-- ``nginx``: Reverse proxy listening on host port 8080 and forwarding to
+- ``nginx``: Reverse proxy listening on host ports 80/443 and forwarding to
   ``web:8000``.
 - ``ingest``: One-off job (enabled via the ``ingest`` profile) that runs
   ``scripts/ingest_orthofinder.py`` inside the app image.
@@ -31,7 +31,8 @@ Build the images and start the web stack:
 
    docker compose up --build
 
-The app is available at ``http://localhost:8080``.
+The app is available at ``https://cephexplorer.gofflab.org`` once DNS and TLS
+are configured for the host.
 
 Ingest data
 -----------
@@ -57,3 +58,11 @@ To restart the web container after a rebuild or ingest:
 .. code-block:: bash
 
    docker compose restart web
+
+Local-only note
+---------------
+
+For local development without TLS, update ``deploy/nginx.conf`` to remove the
+HTTPS server block and change the Nginx ports in ``docker-compose.yml`` to use a
+non-privileged port (for example ``8080:80``). You can also remove the
+``/etc/letsencrypt`` mount in that case.
