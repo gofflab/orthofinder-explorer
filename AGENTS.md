@@ -26,4 +26,3 @@ Ask first:
 - see `routes.py` for routes
 - templates live in `app/templates`
 - static assets are in `app/static`
-- design tokens live in `app/lib/theme/tokens.ts`

@@ -3,7 +3,29 @@
 {% block title %}Orthogroups{% endblock %}
 
 {% block content %}
-<h2 class="mt-4">Orthogroups</h2>
+<section class="page-intro">
+    <header>
+        <p class="eyebrow">Browse families</p>
+        <h2>Orthogroups</h2>
+        <p class="lead">
+            Orthogroups capture sets of genes that likely descend from a single ancestral gene. Use this page to
+            scan the catalog, filter by orthogroup ID, and open a family for its detailed gene tree view.
+        </p>
+        <p>
+            Each entry links to a dedicated orthogroup page where you can inspect the tree and adjust the layout
+            controls to make large families readable.
+        </p>
+    </header>
+    <aside class="tip-card">
+        <h3 class="h6">Tips for navigating</h3>
+        <ul class="tip-list">
+            <li>Search by exact orthogroup ID to jump to a family quickly.</li>
+            <li>Increase rows per page when you are scanning broadly.</li>
+            <li>Open the orthogroup page to see gene-level details.</li>
+        </ul>
+    </aside>
+</section>
+<hr class="section-divider">
 <form method="POST" action="{{ url_for('orthogroups') }}" class="form-inline mb-3">
     <div class="form-group">
         <input type="text" class="form-control" id="search_query" name="search_query" placeholder="Search orthogroup ID" value="{{ search_query }}">
