@@ -1,0 +1,23 @@
+{
+  "Amphimedon_queenslandica": "#888888",
+  "Aplysia_californica": "#9b97c8",
+  "Caenorhabditis_elegans": "#888888",
+  "Caenorhabditis_remanei": "#888888",
+  "Crassostrea_virginica": "#bd156b",
+  "Danio_rerio": "#ba5101",
+  "Doryteuthis_pealeii_20250213": "#126c52",
+  "Doryteuthis_pealeii_gert": "#126c52",
+  "Drosophila_melanogaster": "#888888",
+  "Euprymna_berryi": "#168363",
+  "Hofstenia_miamia": "#888888",
+  "Homo_sapiens": "#ba5101",
+  "Hydra_vulgaris": "#888888",
+  "Mercenaria_mercenaria": "#e6298a",
+  "Mizuhopecten_yessoensis": "#bd156b",
+  "Mus_musculus": "#ba5101",
+  "Octopus_bimaculoides": "#126c52",
+  "Octopus_chierchiae": "#168363",
+  "Octopus_sinensis": "#126c52",
+  "Oncorhynchus_tshawytscha": "#9c4401",
+  "Salmo_salar": "#9c4401"
+}

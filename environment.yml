@@ -71,6 +71,7 @@ dependencies:
   - llvm-openmp=18.1.6
   - lxml=5.2.2
   - matplotlib-inline=0.1.7
+  - sphinx
   - mysql-common=8.3.0
   - mysql-libs=8.3.0
   - ncurses=6.5

@@ -1,7 +1,7 @@
 #!usr/bin/env python
 #from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, Text, ForeignKey
 
 Base = declarative_base()
 
@@ -44,3 +44,15 @@ class GeneKeyLookup(Base):
     species_id = Column(Integer, ForeignKey('species.species_id'))
     species_of_index = Column(Integer)
     gene_id = Column(String, ForeignKey('genes.gene_id'))
+
+class IngestRun(Base):
+    __tablename__ = 'ingest_runs'
+    id = Column(Integer, primary_key=True)
+    dataset_name = Column(String)
+    input_dir = Column(String)
+    created_at = Column(DateTime)
+    orthogroups_count = Column(Integer)
+    genes_count = Column(Integer)
+    sequences_count = Column(Integer)
+    gene_trees_count = Column(Integer)
+    config_json = Column(Text)

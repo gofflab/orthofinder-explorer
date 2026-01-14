@@ -12,19 +12,38 @@ from tempfile import NamedTemporaryFile
 matplotlib.use('Agg')
 
 def register_routes(app):
+    """Register all route handlers on the provided Flask app.
+
+    Args:
+        app: Flask application instance to attach routes to.
+    """
     @app.route('/')
     def index():
+        """Render the home page."""
         app.logger.warning('testing warning log')
         print("Index route accessed")
         return render_template('index.html')
 
     @app.route('/orthogroup/<string:orthogroup_id>')
     def orthogroup(orthogroup_id):
+        """Render a single orthogroup detail page.
+
+        Args:
+            orthogroup_id: Orthogroup identifier from the URL.
+
+        Returns:
+            Rendered orthogroup template.
+        """
         orthogroup = db.session.query(Orthogroup).filter_by(orthogroup_id=orthogroup_id).first_or_404()
         return render_template('orthogroup.html', orthogroup=orthogroup)
 
     @app.route('/orthogroups', methods=['GET', 'POST'])
     def orthogroups():
+        """List orthogroups with optional search and pagination.
+
+        Returns:
+            Rendered list template with pagination context.
+        """
         search_query = request.form.get('search_query', '')
         page = request.args.get('page', 1, type=int)
         per_page = request.form.get('per_page', 10, type=int)
@@ -46,6 +65,14 @@ def register_routes(app):
     
     @app.route('/gene/<string:gene_id>', methods=['GET'])
     def gene_detail(gene_id):
+        """Render a gene detail page by gene ID.
+
+        Args:
+            gene_id: Gene identifier from the URL.
+
+        Returns:
+            Rendered gene detail template.
+        """
         #gene_id = gene_id.lstrip(" ")
         print(f"Gene ID: {gene_id}")
         gene = db.session.query(Gene).join(Sequence).filter_by(gene_id=gene_id).first_or_404()
@@ -56,6 +83,14 @@ def register_routes(app):
 
     @app.route('/gene/<string:gene_id>/edit', methods=['POST'])
     def edit_gene(gene_id):
+        """Update gene metadata based on form inputs.
+
+        Args:
+            gene_id: Gene identifier to update.
+
+        Returns:
+            Redirect to the updated gene detail page.
+        """
         gene = db.session.query(Gene).filter_by(gene_id=gene_id).first_or_404()
         gene.gene_name = request.form.get('gene_name')
         gene.description = request.form.get('gene_description')
@@ -65,6 +100,11 @@ def register_routes(app):
     
     @app.route('/gene_search', methods=['GET', 'POST'])
     def gene_search():
+        """Render a gene search form or search results.
+
+        Returns:
+            Gene search form for GET requests, results page for POST queries.
+        """
         if request.method == 'POST':
             search_query = request.form.get('search_query')
             # Perform a case-insensitive search
@@ -75,6 +115,11 @@ def register_routes(app):
     
     @app.route('/site-map')
     def site_map():
+        """Collect navigable routes for a site map listing.
+
+        Note:
+            This function currently gathers links but does not return a response.
+        """
         links = []
         for rule in app.url_map.iter_rules():
             # Filter out rules we can't navigate to in a browser
