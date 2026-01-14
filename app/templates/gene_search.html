@@ -3,7 +3,29 @@
 {% block title %}Gene Search{% endblock %}
 
 {% block content %}
-<h2 class="mt-4">Gene Search</h2>
+<section class="page-intro">
+    <header>
+        <p class="eyebrow">Find a gene</p>
+        <h2>Gene Search</h2>
+        <p class="lead">
+            Jump directly to a gene of interest and immediately see its orthogroup context. This is the fastest
+            way to confirm orthologs or track a specific identifier across the dataset.
+        </p>
+        <p>
+            Enter a gene ID exactly as it appears in the Orthofinder output. Results will link you to both the
+            gene detail page and the associated orthogroup.
+        </p>
+    </header>
+    <aside class="tip-card">
+        <h3 class="h6">Search tips</h3>
+        <ul class="tip-list">
+            <li>Paste full gene IDs for the most reliable matches.</li>
+            <li>Use orthogroup browsing if you want to explore by family first.</li>
+            <li>Return here to refine your query quickly.</li>
+        </ul>
+    </aside>
+</section>
+<hr class="section-divider">
 <form method="POST" action="{{ url_for('gene_search') }}" class="form-inline">
     <div class="form-group mb-2">
         <label for="search_query" class="sr-only">Enter gene name:</label>

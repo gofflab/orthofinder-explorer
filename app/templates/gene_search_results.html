@@ -4,11 +4,21 @@
 
 {% block content %}
 <h2 class="mt-4">Gene Search Results</h2>
+<section class="helper-note">
+    Results list each matching gene alongside its orthogroup. Follow either link to dive deeper.
+</section>
 {% if genes %}
     <ul class="list-group">
     {% for gene in genes %}
         <li class="list-group-item">
-            Gene: <a href="{{ url_for('gene_detail', gene_id=gene.gene_id) }}">{{ gene.gene_id }}</a><br>Orthogroup: <a href="{{ url_for('orthogroup', orthogroup_id=gene.orthogroup_id) }}">{{ gene.orthogroup_id }}</a>
+            <p class="result-line">
+                <span class="meta-label">Gene</span>
+                <a href="{{ url_for('gene_detail', gene_id=gene.gene_id) }}">{{ gene.gene_id }}</a>
+            </p>
+            <p class="result-line">
+                <span class="meta-label">Orthogroup</span>
+                <a href="{{ url_for('orthogroup', orthogroup_id=gene.orthogroup_id) }}">{{ gene.orthogroup_id }}</a>
+            </p>
         </li>
     {% endfor %}
     </ul>

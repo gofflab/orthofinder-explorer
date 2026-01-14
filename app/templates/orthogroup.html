@@ -2,8 +2,27 @@
 {% block title %}Orthogroup {{ orthogroup.orthogroup_id }}{% endblock %}
 
 {% block content %}
-<h2 class="mt-4">Orthogroup: {{ orthogroup.orthogroup_id }}</h2>
-<p>Description: {{ orthogroup.description }}</p>
+<section class="page-intro">
+    <header>
+        <p class="eyebrow">Orthogroup detail</p>
+        <h2>Orthogroup: {{ orthogroup.orthogroup_id }}</h2>
+        <p class="lead">
+            This view focuses on a single orthogroup, combining its description with an interactive gene tree so
+            you can inspect relationships across species.
+        </p>
+        <p><strong>Description:</strong> {{ orthogroup.description }}</p>
+    </header>
+    <aside class="tip-card">
+        <h3 class="h6">Tree controls</h3>
+        <ul class="tip-list">
+            <li>Adjust width and height to fit the number of tips.</li>
+            <li>Increase tip spacing and font size for dense families.</li>
+            <li>Toggle zoom when you need a closer look at a branch.</li>
+        </ul>
+    </aside>
+</section>
+
+<hr class="section-divider">
 
 <h3>Gene Tree</h3>
 <!-- Hidden until working

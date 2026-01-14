@@ -3,7 +3,82 @@
 {% block title %}CephFinder v0.1{% endblock %}
 
 {% block content %}
-CephExplorer can help you explore, search, identify, and annotate genes and gene families across cephalopod species. Use the navigation links above to get started.
+<section class="hero-pane mt-4">
+    <header class="hero-content">
+        <p class="eyebrow">CephExplorer</p>
+        <h1 class="display-4">Explore cephalopod gene families with context</h1>
+        <p class="lead">
+            CephExplorer turns Orthofinder outputs into an interactive atlas of orthogroups across cephalopod species.
+            Browse gene families, jump to specific genes, and inspect tree structure without juggling spreadsheets.
+        </p>
+        <nav class="hero-actions" aria-label="Primary actions">
+            <a class="btn btn-primary btn-lg" href="{{ url_for('orthogroups') }}">Browse orthogroups</a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('gene_search') }}">Search genes</a>
+        </nav>
+    </header>
+    <aside class="hero-card">
+        <h2 class="h4">Quick start</h2>
+        <ol class="step-list">
+            <li>Open the orthogroup list to see all families and their descriptions.</li>
+            <li>Filter by orthogroup ID, then open a family to explore its gene tree.</li>
+            <li>Use gene search to jump straight to a gene and its orthogroup context.</li>
+        </ol>
+    </aside>
+</section>
+
+<hr class="section-divider">
+
+<section class="info-grid row">
+    <article class="col-lg-4 mb-3">
+        <section class="info-card">
+            <h3>What this app does</h3>
+            <p>
+                CephExplorer is a front-end for Orthofinder results, designed to surface orthogroups, gene
+                identifiers, and tree structure in a single place.
+            </p>
+            <ul>
+                <li>See orthogroup descriptions at a glance.</li>
+                <li>Inspect gene tree topology for each family.</li>
+                <li>Navigate between genes and their orthogroups instantly.</li>
+            </ul>
+        </section>
+    </article>
+    <article class="col-lg-4 mb-3">
+        <section class="info-card">
+            <h3>Why it is helpful</h3>
+            <p>
+                Orthofinder outputs can be dense. This interface makes it easier to spot gene family expansions,
+                track orthologs across species, and support annotation work.
+            </p>
+            <ul>
+                <li>Reduce manual lookups across multiple files.</li>
+                <li>Keep biological context attached to every gene.</li>
+                <li>Share consistent views with collaborators.</li>
+            </ul>
+        </section>
+    </article>
+    <article class="col-lg-4 mb-3">
+        <section class="info-card">
+            <h3>How to use it</h3>
+            <p>
+                Start with whichever direction feels natural: browse families, or search for a gene you already
+                know. The views are connected, so you can pivot quickly.
+            </p>
+            <ul>
+                <li>Browse orthogroups to get a survey of gene families.</li>
+                <li>Search for a gene ID to jump into its orthogroup.</li>
+                <li>Tune the tree controls to focus on the branches you need.</li>
+            </ul>
+        </section>
+    </article>
+</section>
+
+<hr class="section-divider">
+
+<section class="helper-note">
+    Tip: The orthogroup tree view includes controls for width, height, tip spacing, and font size so you can
+    make dense families readable.
+</section>
 {% endblock %}
 
 {% block scripts %}
