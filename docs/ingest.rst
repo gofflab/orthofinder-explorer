@@ -10,6 +10,10 @@ Run with a config file
 
    python scripts/ingest_orthofinder.py --config config/orthofinder_ingest.example.json
 
+When using the Docker helper script, ``input_dir`` and ``dataset_name`` are set
+by the script. You only need to edit the Docker config for non-default options
+like ``mode``, ``forced_clades``, or ``db_path``.
+
 Key CLI flags
 -------------
 

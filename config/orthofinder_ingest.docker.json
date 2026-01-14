@@ -13,7 +13,23 @@
   "clade_max_count": 8,
   "clade_distance_metric": "topology",
   "clade_color_steps": 5,
-  "forced_clades": {},
+  "forced_clades": {
+    "Cephalopods": [
+      "Doryteuthis_pealeii_20250213",
+      "Doryteuthis_pealeii_gert",
+      "Euprymna_berryi",
+      "Octopus_bimaculoides",
+      "Octopus_chierchiae",
+      "Octopus_sinensis"
+    ],
+    "Vertebrates": [
+      "Danio_rerio",
+      "Homo_sapiens",
+      "Mus_musculus",
+      "Oncorhynchus_tshawytscha",
+      "Salmo_salar"
+    ]
+  },
   "dataset_name": "Results_PLACEHOLDER",
   "normalize_dpe_tree_labels": true
 }

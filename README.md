@@ -61,6 +61,9 @@ bash scripts/ingest_docker.sh /path/to/OrthoFinder/Results Results_Feb21
 ```
 The helper script runs against the repository's Compose project so it can be
 invoked from any working directory.
+You only need to edit `config/orthofinder_ingest.docker.json` when you want
+non-default ingest settings (for example `mode`, `forced_clades`, or a custom
+`db_path`). The helper script already supplies `input_dir` and `dataset_name`.
 
 ## Documentation
 Docs are built with Sphinx and live in `docs/`.

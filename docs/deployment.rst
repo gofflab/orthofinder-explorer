@@ -48,6 +48,9 @@ run the ingest service:
 The ingest config uses container paths, so ``input_dir`` should be set to the
 directory under ``/input`` that contains the Orthofinder results. Update
 ``config/orthofinder_ingest.docker.json`` before running an ingest.
+You only need to edit the Docker ingest config when you want to change
+non-default settings like ``mode``, ``forced_clades``, or ``db_path``. The helper
+script overrides ``input_dir`` and ``dataset_name`` at runtime.
 
 To restart the web container after a rebuild or ingest:
 
