@@ -38,5 +38,6 @@ Contents
    data-layout
    database
    app
+   deployment
    troubleshooting
    development

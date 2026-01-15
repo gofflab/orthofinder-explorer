@@ -1,0 +1,35 @@
+{
+  "input_dir": "/input/Results_PLACEHOLDER",
+  "db_path": "/data/orthofinder_new.db",
+  "mode": "rebuild",
+  "orthogroups_file": "Phylogenetic_Hierarchical_Orthogroups/N0.tsv",
+  "species_file": "WorkingDirectory/SpeciesIDs.txt",
+  "sequence_ids_file": "WorkingDirectory/SequenceIDs.txt",
+  "protein_fasta_pattern": "WorkingDirectory/Species{species_id}.fa",
+  "species_tree_file": "Species_Tree/SpeciesTree_rooted.txt",
+  "gene_tree_dir": "Gene_Trees",
+  "species_colors_output": "/data/species_colors.json",
+  "clade_min_count": 5,
+  "clade_max_count": 8,
+  "clade_distance_metric": "topology",
+  "clade_color_steps": 5,
+  "forced_clades": {
+    "Cephalopods": [
+      "Doryteuthis_pealeii_20250213",
+      "Doryteuthis_pealeii_gert",
+      "Euprymna_berryi",
+      "Octopus_bimaculoides",
+      "Octopus_chierchiae",
+      "Octopus_sinensis"
+    ],
+    "Vertebrates": [
+      "Danio_rerio",
+      "Homo_sapiens",
+      "Mus_musculus",
+      "Oncorhynchus_tshawytscha",
+      "Salmo_salar"
+    ]
+  },
+  "dataset_name": "Results_PLACEHOLDER",
+  "normalize_dpe_tree_labels": true
+}

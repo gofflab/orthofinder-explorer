@@ -3,6 +3,7 @@
 - default to small files and diffs. avoid repo wide rewrites unless asked
 - Where appropriate and possible, add color and design options in `app/static/*.css`
 - Add detailed inline documentation to any added functions, classes, or methods.
+- Provide clarifying questions when faced with ambiguous choices.
 
 
 ### Don't

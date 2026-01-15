@@ -2,29 +2,46 @@
 {% block title %}Orthogroup {{ orthogroup.orthogroup_id }}{% endblock %}
 
 {% block content %}
-<section class="page-intro">
+<section class="page-intro page-intro-single">
     <header>
         <p class="eyebrow">Orthogroup detail</p>
-        <h2>Orthogroup: {{ orthogroup.orthogroup_id }}</h2>
-        <p class="lead">
-            This view focuses on a single orthogroup, combining its description with an interactive gene tree so
-            you can inspect relationships across species.
-        </p>
+        <h2 class="orthogroup-heading">
+            Orthogroup: {{ orthogroup.orthogroup_id }}
+            <span class="help-tooltip">
+                <button class="help-trigger" type="button" aria-label="About this view" aria-describedby="orthogroup-help">?</button>
+                <span class="help-bubble" id="orthogroup-help" role="tooltip">
+                    <span class="help-title">About this view</span>
+                    <p>
+                        This view focuses on a single orthogroup, combining its description with an interactive
+                        gene tree so you can inspect relationships across species.
+                    </p>
+                </span>
+            </span>
+        </h2>
         <p><strong>Description:</strong> {{ orthogroup.description }}</p>
     </header>
-    <aside class="tip-card">
-        <h3 class="h6">Tree controls</h3>
-        <ul class="tip-list">
-            <li>Adjust width and height to fit the number of tips.</li>
-            <li>Increase tip spacing and font size for dense families.</li>
-            <li>Toggle zoom when you need a closer look at a branch.</li>
-        </ul>
-    </aside>
 </section>
 
 <hr class="section-divider">
 
-<h3>Gene Tree</h3>
+<h3 class="tree-heading">
+    Gene Tree
+    <span class="help-tooltip">
+        <button class="help-trigger" type="button" aria-label="Tree controls help" aria-describedby="tree-controls-help">?</button>
+        <span class="help-bubble" id="tree-controls-help" role="tooltip">
+            <span class="help-title">Tree controls</span>
+            <ul class="help-list">
+                <li>Adjust width and height to fit the number of tips.</li>
+                <li>Increase tip spacing and font size for dense families.</li>
+                <li>Toggle zoom when you need a closer look at a branch.</li>
+            </ul>
+        </span>
+    </span>
+</h3>
+<nav class="tree-actions" aria-label="Tree exports">
+    <button class="btn btn-outline-secondary btn-sm" type="button" id="downloadTreeSvg">Download SVG</button>
+    <button class="btn btn-outline-secondary btn-sm" type="button" id="downloadTreePng">Download PNG</button>
+</nav>
 <!-- Hidden until working
 <div class="btn-group" data-toggle="buttons">
     <label class="btn btn-default active btn-sm">
@@ -79,6 +96,159 @@
       const autoHeightToggle = document.getElementById('autoHeightToggle');
       const alignTipsToggle = document.getElementById('alignTipsToggle');
       const zoomToggle = document.getElementById('zoomToggle');
+      const downloadSvgButton = document.getElementById('downloadTreeSvg');
+      const downloadPngButton = document.getElementById('downloadTreePng');
+      const treeContainer = document.getElementById('tree-container');
+      const rawDownloadName = "{{ orthogroup.orthogroup_id }}";
+
+      /**
+       * Sanitize an identifier into a filesystem-friendly filename stem.
+       *
+       * @param {string} value - Identifier to normalize for filenames.
+       * @returns {string} Normalized filename stem.
+       */
+      function sanitizeFileStem(value) {
+        return (value || "orthogroup")
+          .toString()
+          .trim()
+          .replace(/[^a-z0-9]+/gi, "_")
+          .replace(/^_+|_+$/g, "")
+          .toLowerCase() || "orthogroup";
+      }
+
+      /**
+       * Determine the rendered dimensions of the tree SVG.
+       *
+       * @param {SVGSVGElement} svgElement - SVG element that renders the tree.
+       * @returns {Object} Pixel dimensions for export.
+       */
+      function getSvgDimensions(svgElement) {
+        const bounds = svgElement.getBoundingClientRect();
+        const width = parseFloat(svgElement.getAttribute("width")) || bounds.width || svgElement.clientWidth;
+        const height = parseFloat(svgElement.getAttribute("height")) || bounds.height || svgElement.clientHeight;
+        return { width, height };
+      }
+
+      /**
+       * Serialize the tree SVG with required XML namespaces.
+       *
+       * @param {SVGSVGElement} svgElement - SVG element that renders the tree.
+       * @returns {string} Serialized SVG markup.
+       */
+      function serializeTreeSvg(svgElement) {
+        const clonedSvg = svgElement.cloneNode(true);
+        inlineTreeStyles(svgElement, clonedSvg);
+        if (!clonedSvg.getAttribute("xmlns")) {
+          clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        }
+        if (!clonedSvg.getAttribute("xmlns:xlink")) {
+          clonedSvg.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+        }
+        if (!clonedSvg.getAttribute("viewBox")) {
+          const size = getSvgDimensions(svgElement);
+          if (size.width && size.height) {
+            clonedSvg.setAttribute("viewBox", `0 0 ${size.width} ${size.height}`);
+          }
+        }
+        return new XMLSerializer().serializeToString(clonedSvg);
+      }
+
+      /**
+       * Inline computed styles so exported SVGs match on-screen rendering.
+       *
+       * @param {SVGSVGElement} originalSvg - The original SVG in the DOM.
+       * @param {SVGSVGElement} clonedSvg - A cloned SVG to receive inline styles.
+       */
+      function inlineTreeStyles(originalSvg, clonedSvg) {
+        const styleProps = [
+          "fill",
+          "stroke",
+          "stroke-width",
+          "opacity",
+          "font-size",
+          "font-family",
+          "font-weight",
+          "text-anchor",
+          "dominant-baseline",
+        ];
+        const originalNodes = originalSvg.querySelectorAll("*");
+        const clonedNodes = clonedSvg.querySelectorAll("*");
+        originalNodes.forEach(function(node, index) {
+          const clone = clonedNodes[index];
+          if (!clone) {
+            return;
+          }
+          const computed = window.getComputedStyle(node);
+          const styleText = styleProps
+            .map(function(prop) {
+              return `${prop}:${computed.getPropertyValue(prop)}`;
+            })
+            .join(";");
+          if (styleText) {
+            clone.setAttribute("style", styleText);
+          }
+        });
+      }
+
+      /**
+       * Trigger a download for the provided blob.
+       *
+       * @param {Blob} blob - File contents to download.
+       * @param {string} filename - Suggested filename for the download.
+       */
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      /**
+       * Render an SVG markup string to a PNG blob via an offscreen canvas.
+       *
+       * @param {string} svgMarkup - Serialized SVG markup string.
+       * @param {number} width - SVG width in pixels.
+       * @param {number} height - SVG height in pixels.
+       * @returns {Promise<Blob>} Promise resolving to a PNG blob.
+       */
+      function renderSvgToPng(svgMarkup, width, height) {
+        return new Promise(function(resolve, reject) {
+          const pixelRatio = window.devicePixelRatio || 1;
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.ceil(width * pixelRatio);
+          canvas.height = Math.ceil(height * pixelRatio);
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+          const context = canvas.getContext("2d");
+          context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, width, height);
+
+          const svgBlob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+          const url = URL.createObjectURL(svgBlob);
+          const image = new Image();
+          image.onload = function() {
+            context.drawImage(image, 0, 0, width, height);
+            URL.revokeObjectURL(url);
+            canvas.toBlob(function(blob) {
+              if (blob) {
+                resolve(blob);
+              } else {
+                reject(new Error("PNG export failed."));
+              }
+            }, "image/png");
+          };
+          image.onerror = function() {
+            URL.revokeObjectURL(url);
+            reject(new Error("PNG export failed."));
+          };
+          image.src = url;
+        });
+      }
 
       function syncHeightControl() {
         heightRange.disabled = autoHeightToggle.checked;
@@ -116,7 +286,41 @@
       autoHeightToggle.addEventListener('change', syncHeightControl);
       syncHeightControl();
 
-      fetch("{{ url_for('static', filename='species_colors.json') }}")
+      if (downloadSvgButton) {
+        downloadSvgButton.addEventListener("click", function() {
+          if (!treeContainer) {
+            return;
+          }
+          const svgMarkup = serializeTreeSvg(treeContainer);
+          const blob = new Blob([svgMarkup], { type: "image/svg+xml;charset=utf-8" });
+          const filename = `${sanitizeFileStem(rawDownloadName)}.svg`;
+          downloadBlob(blob, filename);
+        });
+      }
+
+      if (downloadPngButton) {
+        downloadPngButton.addEventListener("click", function() {
+          if (!treeContainer) {
+            return;
+          }
+          const svgMarkup = serializeTreeSvg(treeContainer);
+          const size = getSvgDimensions(treeContainer);
+          if (!size.width || !size.height) {
+            console.error("Tree export failed: SVG has no size.");
+            return;
+          }
+          const filename = `${sanitizeFileStem(rawDownloadName)}.png`;
+          renderSvgToPng(svgMarkup, size.width, size.height)
+            .then(function(blob) {
+              downloadBlob(blob, filename);
+            })
+            .catch(function(error) {
+              console.error(error);
+            });
+        });
+      }
+
+      fetch("{{ url_for('species_colors') }}")
         .then(function(response) {
           if (!response.ok) {
             return null;

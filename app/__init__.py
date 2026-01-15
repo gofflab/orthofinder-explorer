@@ -22,6 +22,14 @@ def create_app():
         db_path = os.path.join(app.instance_path, 'orthofinder_new.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    species_colors_path = os.environ.get('ORTHOFINDER_SPECIES_COLORS_PATH')
+    if species_colors_path:
+        species_colors_path = os.path.expanduser(species_colors_path)
+        if not os.path.isabs(species_colors_path):
+            species_colors_path = os.path.join(app.root_path, species_colors_path)
+    else:
+        species_colors_path = os.path.join(app.root_path, 'static', 'species_colors.json')
+    app.config['SPECIES_COLORS_PATH'] = species_colors_path
 
     db.init_app(app)
 

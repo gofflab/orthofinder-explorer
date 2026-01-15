@@ -223,8 +223,116 @@ a:focus {
     gap: 24px;
 }
 
+.page-intro-single {
+    grid-template-columns: 1fr;
+}
+
 .page-intro p {
     color: var(--color-muted);
+}
+
+.orthogroup-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.tree-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.tree-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-3);
+}
+
+.help-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.help-trigger {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-accent-strong);
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+}
+
+.help-trigger:hover,
+.help-trigger:focus-visible {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: rgba(var(--color-accent-rgb), 0.12);
+}
+
+.help-bubble {
+    position: absolute;
+    top: calc(100% + var(--space-1));
+    right: 0;
+    min-width: 220px;
+    max-width: 320px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+    color: var(--color-muted);
+    font-size: 0.9rem;
+    font-weight: 400;
+    box-shadow: var(--shadow-subtle);
+    opacity: 0;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+}
+
+.help-bubble p {
+    margin-bottom: var(--space-2);
+}
+
+.help-title {
+    display: block;
+    margin-bottom: var(--space-1);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.help-list {
+    margin: 0;
+    padding-left: 16px;
+    color: var(--color-muted);
+}
+
+.help-list li {
+    margin-bottom: var(--space-1);
+}
+
+.help-list li:last-child {
+    margin-bottom: 0;
+}
+
+.help-tooltip:hover .help-bubble,
+.help-tooltip:focus-within .help-bubble {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
 }
 
 .tip-card {
