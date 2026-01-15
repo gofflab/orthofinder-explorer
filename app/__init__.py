@@ -30,6 +30,18 @@ def create_app():
     else:
         species_colors_path = os.path.join(app.root_path, 'static', 'species_colors.json')
     app.config['SPECIES_COLORS_PATH'] = species_colors_path
+    ga_measurement_id = os.environ.get('GOOGLE_ANALYTICS_MEASUREMENT_ID', '').strip()
+    app.config['GOOGLE_ANALYTICS_MEASUREMENT_ID'] = ga_measurement_id or None
+
+    @app.context_processor
+    def inject_google_analytics_config():
+        """Expose the Google Analytics measurement ID to templates.
+
+        Returns:
+            Mapping with `ga_measurement_id` for conditional template rendering,
+            or None when analytics is intentionally disabled.
+        """
+        return {'ga_measurement_id': app.config.get('GOOGLE_ANALYTICS_MEASUREMENT_ID')}
 
     db.init_app(app)
 
