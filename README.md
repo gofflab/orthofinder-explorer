@@ -80,6 +80,10 @@ To override the DB used by the Flask app, set:
 ```bash
 export ORTHOFINDER_DB_PATH=instance/orthofinder_new.db
 ```
+To enable Google Analytics (GA4), set:
+```bash
+export GOOGLE_ANALYTICS_MEASUREMENT_ID=G-XXXXXXX
+```
 ## Documentation
 Docs are built with Sphinx and live in `docs/`.
 Serve docs locally:
