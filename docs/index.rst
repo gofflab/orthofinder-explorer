@@ -36,6 +36,7 @@ Contents
 
    ingest
    data-layout
+   species-annotations
    database
    app
    deployment

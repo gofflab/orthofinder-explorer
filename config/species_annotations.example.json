@@ -1,0 +1,42 @@
+{
+  "_comment": "Example configuration for ingest_species_annotations.py",
+
+  "db_path": "instance/orthofinder_new.db",
+
+  "mode": "rebuild",
+
+  "skip_features": false,
+
+  "feature_types": ["exon", "CDS", "five_prime_utr", "three_prime_utr"],
+
+  "gtf_pattern": null,
+  "domain_pattern": null,
+
+  "species_annotations": {
+    "Homo_sapiens": {
+      "gtf_file": "annotations/Homo_sapiens/Homo_sapiens.GRCh38.112.gtf",
+      "domain_predictions": [
+        "annotations/Homo_sapiens/interproscan.tsv"
+      ]
+    },
+    "Mus_musculus": {
+      "gtf_file": "annotations/Mus_musculus/Mus_musculus.GRCm39.112.gtf",
+      "domain_predictions": [
+        "annotations/Mus_musculus/interproscan.tsv"
+      ]
+    },
+    "Danio_rerio": {
+      "gtf_file": "annotations/Danio_rerio/Danio_rerio.GRCz11.112.gtf",
+      "domain_predictions": [
+        "annotations/Danio_rerio/interproscan.tsv"
+      ]
+    },
+    "Doryteuthis_pealeii_20250213": {
+      "gtf_file": "annotations/Doryteuthis_pealeii/transcriptome_annotated.gtf",
+      "domain_predictions": [
+        "annotations/Doryteuthis_pealeii/interproscan.tsv",
+        "annotations/Doryteuthis_pealeii/pfam_domtblout.txt"
+      ]
+    }
+  }
+}
