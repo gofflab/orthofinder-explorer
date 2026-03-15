@@ -65,11 +65,13 @@ DEFAULTS = {
     "db_path": "instance/orthofinder_new.db",
     "mode": "append",
     "skip_features": False,
+    "skip_mrna": False,
     "feature_types": ["exon", "CDS", "five_prime_utr", "three_prime_utr"],
     "species_annotations": {},
     # Pattern-based fallbacks (use {species_name} placeholder)
     "gtf_pattern": None,
     "domain_pattern": None,
+    "mrna_pattern": None,
 }
 
 
@@ -251,6 +253,41 @@ def parse_gtf(gtf_path, feature_types=None, max_rows=None):
 
     for tid, t_dict in transcripts.items():
         yield t_dict, features.get(tid, [])
+
+
+# ---------------------------------------------------------------------------
+# mRNA FASTA parsing
+# ---------------------------------------------------------------------------
+
+def fasta_generator(fasta_path):
+    """Stream sequences from a FASTA file without loading it all into memory.
+
+    Yields (transcript_id, description, sequence) tuples where ``transcript_id``
+    is the first whitespace-delimited token of the header line (after ``>``) and
+    ``description`` is the remainder of the header line (may be empty).
+
+    Handles both standard single-line and multi-line (wrapped) FASTA.
+    """
+    current_id = None
+    current_desc = ""
+    buf = []
+
+    with open(fasta_path) as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if line.startswith(">"):
+                if current_id is not None:
+                    yield current_id, current_desc, "".join(buf)
+                header = line[1:].strip()
+                parts = header.split(None, 1)
+                current_id = parts[0]
+                current_desc = parts[1] if len(parts) > 1 else ""
+                buf = []
+            elif line:
+                buf.append(line)
+
+    if current_id is not None:
+        yield current_id, current_desc, "".join(buf)
 
 
 # ---------------------------------------------------------------------------
@@ -478,6 +515,23 @@ def insert_in_batches(session, objects, batch_size=2000, label="records"):
     return total
 
 
+def ensure_column(engine, table, column, col_type="TEXT"):
+    """Add *column* to *table* if it does not already exist.
+
+    SQLite supports ``ALTER TABLE ADD COLUMN`` for nullable columns, so this
+    lets us extend an existing database without a full rebuild.  The function
+    is a no-op when the column is already present.
+    """
+    with engine.connect() as conn:
+        result = conn.execute(text(f"PRAGMA table_info({table})"))
+        existing = {row[1] for row in result}
+    if column not in existing:
+        with engine.connect() as conn:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
+            conn.commit()
+        log.info("Added column %s.%s to existing database.", table, column)
+
+
 def clear_species_annotations(session, species_id):
     """Delete existing annotation rows for a species (for rebuild mode)."""
     # Delete in dependency order
@@ -628,11 +682,133 @@ def ingest_domains(session, species_id, domain_path):
 
 
 # ---------------------------------------------------------------------------
+# mRNA sequence ingestion
+# ---------------------------------------------------------------------------
+
+def _build_transcript_lookup(session, species_id):
+    """Return (exact_set, prefix_map) for transcript_ids of a species.
+
+    ``prefix_map`` maps the version-stripped ID to the full transcript_id
+    (e.g. ``"ENST00000456328"`` → ``"ENST00000456328.2"``).
+    """
+    rows = session.execute(
+        text("SELECT transcript_id FROM transcripts WHERE species_id = :sid"),
+        {"sid": species_id},
+    ).fetchall()
+    exact = {row[0] for row in rows}
+    prefix = {}
+    for tid in exact:
+        key = re.split(r"[.|]", tid)[0]
+        prefix.setdefault(key, tid)
+    return exact, prefix
+
+
+def ingest_mrna_fasta(session, engine, species_id, fasta_path):
+    """Load mRNA sequences from a FASTA file into the ``transcripts`` table.
+
+    For each FASTA entry:
+
+    * **Matched transcript** – updates the existing ``Transcript`` row's
+      ``mrna_sequence`` field.
+    * **Unmatched entry** – inserts a minimal stub ``Transcript`` row
+      (coordinates NULL) so the sequence is not silently discarded.  This
+      handles *de novo* transcriptomes where no GTF was available.
+
+    The FASTA header's first token is used as the transcript ID.  Version
+    suffixes are stripped on a best-effort basis (``ENST00000456328.2`` →
+    ``ENST00000456328``) before falling back to stub insertion.
+
+    Parameters
+    ----------
+    session:
+        Active SQLAlchemy session.
+    engine:
+        SQLAlchemy engine (used for bulk UPDATE).
+    species_id:
+        ``species.species_id`` for the target species.
+    fasta_path:
+        Path to the mRNA FASTA file.
+
+    Returns
+    -------
+    tuple of (updated_count, inserted_count)
+    """
+    log.info("Parsing mRNA FASTA: %s", fasta_path)
+
+    exact, prefix = _build_transcript_lookup(session, species_id)
+
+    updates = []   # list of {"tid": ..., "seq": ...}
+    stubs = []     # Transcript objects to insert
+
+    for raw_id, desc, seq in fasta_generator(fasta_path):
+        if not seq:
+            continue
+
+        # Try exact match first, then version-stripped
+        if raw_id in exact:
+            matched_tid = raw_id
+        else:
+            stripped = re.split(r"[.|]", raw_id)[0]
+            matched_tid = prefix.get(stripped)
+
+        if matched_tid:
+            updates.append({"tid": matched_tid, "seq": seq})
+        else:
+            # Insert a stub transcript so the sequence is preserved
+            stubs.append(
+                Transcript(
+                    transcript_id=raw_id,
+                    gene_id=None,
+                    species_id=species_id,
+                    gtf_gene_id="",
+                    transcript_name=desc[:255] if desc else "",
+                    seqname=None,
+                    source="mrna_fasta",
+                    biotype="",
+                    start=None,
+                    end=None,
+                    strand=None,
+                    exon_count=0,
+                    cds_length=0,
+                    attributes_json="{}",
+                    mrna_sequence=seq,
+                )
+            )
+
+    # Bulk update existing transcripts
+    BATCH = 500
+    updated = 0
+    with engine.connect() as conn:
+        for i in range(0, len(updates), BATCH):
+            chunk = updates[i : i + BATCH]
+            conn.execute(
+                text(
+                    "UPDATE transcripts SET mrna_sequence = :seq "
+                    "WHERE transcript_id = :tid"
+                ),
+                chunk,
+            )
+            conn.commit()
+            updated += len(chunk)
+            if updated % 5000 == 0:
+                log.info("  Updated %d transcript sequences so far…", updated)
+
+    # Insert stubs for unmatched entries
+    inserted = insert_in_batches(session, stubs, label="mrna stub transcripts")
+
+    log.info(
+        "  mRNA FASTA: %d sequences updated, %d stub transcripts inserted.",
+        updated, inserted,
+    )
+    return updated, inserted
+
+
+# ---------------------------------------------------------------------------
 # Config resolution: per-species annotation file paths
 # ---------------------------------------------------------------------------
 
 def resolve_species_files(cfg, species_name):
-    """Return (gtf_path_or_None, list_of_domain_paths) for a species."""
+    """Return (gtf_path_or_None, list_of_domain_paths, mrna_fasta_or_None) for a species."""
     per_species = cfg.get("species_annotations", {}).get(species_name, {})
 
     # GTF
@@ -651,7 +827,14 @@ def resolve_species_files(cfg, species_name):
     if isinstance(domain_raw, str):
         domain_raw = [domain_raw]
 
-    return gtf, domain_raw
+    # mRNA FASTA
+    mrna = per_species.get("mrna_fasta") or (
+        cfg["mrna_pattern"].format(species_name=species_name)
+        if cfg.get("mrna_pattern")
+        else None
+    )
+
+    return gtf, domain_raw, mrna
 
 
 # ---------------------------------------------------------------------------
@@ -678,6 +861,10 @@ def main(argv=None):
         "--skip-features", action="store_true",
         help="Parse GTF transcripts but skip loading individual exon/CDS features",
     )
+    parser.add_argument(
+        "--skip-mrna", action="store_true",
+        help="Skip loading mRNA sequences even if mrna_fasta is configured",
+    )
     args = parser.parse_args(argv)
 
     cfg = merge_config(DEFAULTS, load_config(args.config))
@@ -687,6 +874,8 @@ def main(argv=None):
         cfg["mode"] = args.mode
     if args.skip_features:
         cfg["skip_features"] = True
+    if args.skip_mrna:
+        cfg["skip_mrna"] = True
 
     db_path = Path(cfg["db_path"])
     if not db_path.exists():
@@ -696,6 +885,8 @@ def main(argv=None):
 
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)   # create new tables if not present
+    # Migrate existing databases that predate the mrna_sequence column
+    ensure_column(engine, "transcripts", "mrna_sequence", "TEXT")
     Session = sessionmaker(bind=engine)
     session = Session()
 
@@ -721,6 +912,8 @@ def main(argv=None):
     total_transcripts = 0
     total_features = 0
     total_domains = 0
+    total_mrna_updated = 0
+    total_mrna_inserted = 0
 
     for species_name in sorted(wanted):
         if species_name not in name_to_id:
@@ -730,9 +923,9 @@ def main(argv=None):
         species_id = name_to_id[species_name]
         log.info("=== Processing species: %s (id=%s) ===", species_name, species_id)
 
-        gtf_path, domain_paths = resolve_species_files(cfg, species_name)
+        gtf_path, domain_paths, mrna_path = resolve_species_files(cfg, species_name)
 
-        if not gtf_path and not domain_paths:
+        if not gtf_path and not domain_paths and not mrna_path:
             log.warning("  No annotation files configured for %s, skipping.", species_name)
             continue
 
@@ -752,6 +945,16 @@ def main(argv=None):
                 total_transcripts += t
                 total_features += f
 
+        if mrna_path and not cfg.get("skip_mrna"):
+            p = Path(mrna_path)
+            if not p.exists():
+                log.warning("  mRNA FASTA not found, skipping: %s", p)
+            else:
+                upd, ins = ingest_mrna_fasta(session, engine, species_id, p)
+                total_mrna_updated += upd
+                total_mrna_inserted += ins
+                total_transcripts += ins   # stubs count as new transcripts
+
         for dp in domain_paths:
             p = Path(dp)
             if not p.exists():
@@ -761,8 +964,10 @@ def main(argv=None):
             total_domains += d
 
     log.info(
-        "Done.  Loaded %d transcripts, %d features, %d domain hits total.",
-        total_transcripts, total_features, total_domains,
+        "Done.  Loaded %d transcripts (%d mRNA-only stubs), %d features, "
+        "%d domain hits; %d existing transcripts had mRNA sequences added.",
+        total_transcripts, total_mrna_inserted,
+        total_features, total_domains, total_mrna_updated,
     )
     session.close()
 

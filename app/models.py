@@ -84,6 +84,7 @@ class Transcript(Base):
     exon_count = Column(Integer)         # number of exon features for this transcript
     cds_length = Column(Integer)         # summed length of CDS features (nt)
     attributes_json = Column(Text)       # full GTF attribute string stored as JSON
+    mrna_sequence = Column(Text)         # full transcript nucleotide sequence (spliced mRNA)
 
     gene = relationship('Gene', foreign_keys=[gene_id])
     features = relationship('TranscriptFeature', back_populates='transcript',

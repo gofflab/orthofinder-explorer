@@ -20,16 +20,20 @@ The species annotation pipeline (``ingest_species_annotations.py``) adds
 
 * **Isoforms** – all transcript variants of a gene, with their exon/CDS
   structure parsed from a GTF or GFF3 annotation file.
+* **mRNA sequences** – spliced transcript nucleotide sequences, one per
+  isoform, loaded from a per-species mRNA FASTA file.
 * **Protein domains** – functional domain predictions from InterProScan or
   Pfam/HMMER, linked to genes and transcripts.
 
-These two layers are designed to be loaded independently; the annotation script
-requires that the OrthoFinder ingestion has already run.
+These layers are designed to be loaded independently and in any combination;
+the annotation script requires that the OrthoFinder ingestion has already run.
 
 .. code-block:: text
 
-   ingest_orthofinder.py    →  orthogroups, genes, sequences, gene_trees, species
-   ingest_species_annotations.py  →  transcripts, transcript_features, protein_domains
+   ingest_orthofinder.py          →  orthogroups, genes, sequences (protein),
+                                      gene_trees, species
+   ingest_species_annotations.py  →  transcripts (+ mrna_sequence),
+                                      transcript_features, protein_domains
 
 Input File Formats
 ------------------
@@ -86,6 +90,47 @@ end of the run.
    (e.g. the protein FASTA uses transcript IDs rather than gene IDs), provide
    a mapping file in the config's ``id_mapping`` key (see :ref:`config-format`
    below).  This is planned for a future release.
+
+mRNA / Transcript Sequence FASTA
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A per-species FASTA file containing the spliced nucleotide sequences for each
+transcript isoform.  Each entry's sequence is stored in
+``transcripts.mrna_sequence``.
+
+Standard sources for model organisms:
+
+* **Ensembl** – ``*cdna.all.fa.gz`` release files (e.g.
+  ``Homo_sapiens.GRCh38.cdna.all.fa``).
+* **NCBI RefSeq** – ``*_rna.fna.gz`` files from the FTP assembly directory.
+* **StringTie / Trinity** – the assembled transcript FASTA produced directly
+  by the assembler (no reformatting required).
+
+The FASTA header convention is flexible.  The parser uses the **first
+whitespace-delimited token** of each header line as the transcript ID::
+
+    # Ensembl cDNA FASTA
+    >ENST00000456328.2 cdna chromosome:GRCh38:1:11869:14409:1 gene:ENSG00000223972.11 ...
+
+    # Trinity
+    >TRINITY_DN12345_c0_g1_i1 len=1487 path=[12:0-1486]
+
+    # StringTie
+    >STRG.1.1 gene_id "STRG.1"; transcript_id "STRG.1.1"; ...
+
+    # Simple (transcript ID only)
+    >transcript_0001
+
+ID matching against the ``transcripts`` table follows the same strategy as
+for genes: exact match first, then version-suffix stripping
+(``ENST00000456328.2`` → ``ENST00000456328``).
+
+**Behaviour when a transcript is not yet in the database** (no prior GTF
+ingestion, or the FASTA contains more entries than the GTF): a minimal
+*stub* ``Transcript`` row is inserted with ``source = 'mrna_fasta'`` and
+coordinates set to NULL, so no sequence is silently discarded.  This makes
+``mrna_fasta`` a valid standalone input for *de novo* transcriptomes that
+have no accompanying GTF.
 
 Protein Domain Predictions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -152,6 +197,12 @@ is not yet needed)::
         --config config/species_annotations.json \
         --skip-features
 
+Skip mRNA sequence loading::
+
+    python scripts/ingest_species_annotations.py \
+        --config config/species_annotations.json \
+        --skip-mrna
+
 Modes:
 
 * ``rebuild`` (default) – deletes all existing annotation rows for each
@@ -207,6 +258,9 @@ Key options
      - ``false``
      - When ``true``, transcripts are loaded but individual exon/CDS rows are
        skipped (saves space for large genomes).
+   * - ``skip_mrna``
+     - ``false``
+     - When ``true``, mRNA FASTA files are ignored even if configured.
    * - ``feature_types``
      - (all four UTR/exon/CDS)
      - List of GTF feature types to store in ``transcript_features``.
@@ -217,10 +271,13 @@ Key options
    * - ``domain_pattern``
      - ``null``
      - Pattern with ``{species_name}`` placeholder for domain files.
+   * - ``mrna_pattern``
+     - ``null``
+     - Pattern with ``{species_name}`` placeholder for mRNA FASTA files.
    * - ``species_annotations``
      - ``{}``
-     - Per-species dict; each value may have ``gtf_file`` and/or
-       ``domain_predictions`` (string or list).
+     - Per-species dict; each value may have ``gtf_file``, ``mrna_fasta``,
+       and/or ``domain_predictions`` (string or list).
 
 Database Tables
 ---------------
@@ -265,6 +322,9 @@ One row per transcript isoform.  Links back to ``genes`` via ``gene_id``
      - Summed CDS feature length in nucleotides.
    * - ``attributes_json``
      - Full GTF attribute dictionary serialised as JSON.
+   * - ``mrna_sequence``
+     - Full spliced transcript nucleotide sequence (loaded from mRNA FASTA).
+       NULL until a FASTA file is ingested.
 
 ``transcript_features``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -397,10 +457,6 @@ The following data types are planned for ingestion in future iterations:
 
    * - Source
      - Description
-   * - **mRNA FASTA (per transcript)**
-     - Populate ``sequences.mrna_sequence`` at the isoform level, keyed to
-       ``transcripts.transcript_id``.  Currently ``mrna_sequence`` on
-       ``Sequence`` is per-gene only.
    * - **Signal peptide / TM predictions**
      - SignalP / DeepTMHMM output; add ``signal_peptide`` and
        ``transmembrane_topology`` columns to ``transcripts`` or a new
