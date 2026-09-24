@@ -1,5 +1,6 @@
 services:
   web:
+    restart: unless-stopped
     build: .
     environment:
       - ORTHOFINDER_DB_PATH=/data/orthofinder_new.db
@@ -11,6 +12,7 @@ services:
       - "8000"
 
   nginx:
+    restart: unless-stopped
     image: nginx:1.27-alpine
     depends_on:
       - web
