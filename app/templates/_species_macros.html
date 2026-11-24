@@ -1,0 +1,83 @@
+{#
+  Shared building blocks for the Species and Species Comparison pages.
+
+  chart_card   A <figure> that a d3 chart draws into.  It carries a title, a
+               subtitle, an optional help bubble and a "View data" toggle that
+               swaps the chart for its table twin.
+  stat_tile    A headline number with a label and a supporting note.
+  species_select  A <select> listing every species in display order.
+  help         The site's existing help-tooltip component.
+  cx_scripts   Chart stylesheet hooks, shared scripts and the URL map that
+               the page scripts use to reach the JSON API.
+#}
+
+{% macro help(id, title, text) %}
+<span class="help-tooltip">
+    <button class="help-trigger" type="button" aria-label="{{ title }}" aria-describedby="{{ id }}">?</button>
+    <span class="help-bubble" id="{{ id }}" role="tooltip">
+        <span class="help-title">{{ title }}</span>
+        {{ text }}
+    </span>
+</span>
+{% endmacro %}
+
+{% macro chart_card(id, title, subtitle='', help_text=None) %}
+<figure class="chart-card" id="{{ id }}">
+    <header class="chart-header">
+        <hgroup>
+            <h3 class="chart-title">
+                {{ title }}
+                {% if help_text %}{{ help(id ~ '-help', 'How to read this', help_text) }}{% endif %}
+            </h3>
+            <p class="chart-subtitle">{{ subtitle }}</p>
+        </hgroup>
+        <button type="button" class="btn btn-outline-secondary chart-table-toggle" aria-pressed="false" hidden>View data</button>
+    </header>
+    {% if caller %}{{ caller() }}{% endif %}
+    <section class="chart-body" aria-live="polite"><p class="chart-status">Loading…</p></section>
+    <section class="chart-table" hidden></section>
+</figure>
+{% endmacro %}
+
+{% macro stat_tile(id, label, key=None) %}
+<article class="stat-tile" id="{{ id }}">
+    <p class="stat-label">{% if key %}<span class="stat-key series-key-{{ key }}"></span>{% endif %}{{ label }}</p>
+    <p class="stat-value">–</p>
+    <p class="stat-note"></p>
+</article>
+{% endmacro %}
+
+{% macro species_select(id, name, options, selected=None, placeholder=None) %}
+<select class="form-control" id="{{ id }}" name="{{ name }}">
+    {% if placeholder %}<option value="">{{ placeholder }}</option>{% endif %}
+    {% for option in options %}
+    <option value="{{ option.name }}" {% if option.name == selected %}selected{% endif %}>{{ option.label }}</option>
+    {% endfor %}
+</select>
+{% endmacro %}
+
+{% macro cx_scripts() %}
+<script src="{{ url_for('static', filename='js/cx-core.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cx-charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cx-orthogroups.js') }}"></script>
+<script>
+    // URL map for the page scripts.  __NAME__ and __ID__ are placeholders
+    // that the scripts replace with URL-encoded values.
+    CX.urls = {{ {
+        'speciesColors': url_for('species_colors'),
+        'speciesIndex': url_for('species_index'),
+        'species': url_for('species_detail', species_name='__NAME__'),
+        'compare': url_for('species_compare'),
+        'orthogroup': url_for('orthogroup', orthogroup_id='__ID__')[:-6],
+        'apiSpecies': url_for('api_species'),
+        'apiSpeciesOverview': url_for('api_species_overview', species_name='__NAME__'),
+        'apiSpeciesOrthogroups': url_for('api_species_orthogroups', species_name='__NAME__'),
+        'apiSpeciesAnnotations': url_for('api_species_annotations', species_name='__NAME__'),
+        'apiSpeciesDomains': url_for('api_species_domains', species_name='__NAME__'),
+        'apiCompare': url_for('api_compare'),
+        'apiCompareDomains': url_for('api_compare_domains'),
+        'orthogroupProfile': url_for('api_orthogroup_profile', orthogroup_id='__ID__'),
+        'orthogroupAnnotations': url_for('api_orthogroup_annotations'),
+    } | tojson }};
+</script>
+{% endmacro %}

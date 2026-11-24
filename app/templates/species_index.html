@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "_species_macros.html" as ui %}
+
+{% block title %}Species{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <header>
+        <p class="eyebrow">Species</p>
+        <h2>Species in this dataset</h2>
+        <p class="lead">
+            Every species that went into the OrthoFinder run, summarised by how many of its genes fall into
+            shared gene families and how widely those families are conserved.
+        </p>
+        <p id="dataset-note"></p>
+    </header>
+    <aside class="tip-card">
+        <h3 class="h6">Where to go from here</h3>
+        <ul class="tip-list">
+            <li>Click a species name or bar to open its page.</li>
+            <li>Click a cell in the similarity map to compare that pair.</li>
+            <li>Or pick two species below to compare them directly.</li>
+        </ul>
+    </aside>
+</section>
+
+<form class="control-row species-picker" method="get" action="{{ url_for('species_compare') }}" aria-label="Compare two species">
+    <label>Species A
+        {{ ui.species_select('pick-a', 'a', species_options, placeholder='Choose a species') }}
+    </label>
+    <label>Species B
+        {{ ui.species_select('pick-b', 'b', species_options, placeholder='Choose a species') }}
+    </label>
+    <button type="submit" class="btn btn-primary">Compare</button>
+</form>
+
+<hr class="section-divider">
+
+<section class="chart-grid chart-grid-single">
+    {% call ui.chart_card(
+        'chart-conservation',
+        'How conserved is each gene set?',
+        'Genes per species, split by how widely their orthogroup is shared.',
+        'Each gene is classed by the number of species represented in its orthogroup. Dark segments are families found in nearly every species; light segments are restricted to few species or to one. Grey genes were not placed in any orthogroup.'
+    ) %}
+    <nav class="control-row" aria-label="Chart units">
+        <span class="segmented" id="conservation-unit">
+            <button type="button" data-value="count" aria-pressed="true">Gene counts</button>
+            <button type="button" data-value="share" aria-pressed="false">Share of genes</button>
+        </span>
+    </nav>
+    {% endcall %}
+
+    {{ ui.chart_card(
+        'chart-shared',
+        'Which species share the most gene families?',
+        'Jaccard similarity of orthogroup sets for every pair of species. Click a cell to compare the pair.',
+        'For each pair, the number of orthogroups containing both species divided by the number containing either. Darker cells share a larger fraction of their gene families.'
+    ) }}
+</section>
+
+<h3 class="section-heading">Summary table</h3>
+<p class="section-lead">
+    Core coverage is the share of near-universal families (present in at least 90% of the other species)
+    that the species also carries. Low values usually point to an incomplete or fragmented annotation.
+</p>
+<section id="species-table" class="og-table-wrap"><p class="chart-status">Loading…</p></section>
+{% endblock %}
+
+{% block scripts %}
+{{ ui.cx_scripts() }}
+<script src="{{ url_for('static', filename='js/species-index.js') }}"></script>
+{% endblock %}

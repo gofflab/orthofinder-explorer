@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% import "_species_macros.html" as ui %}
+
+{% block title %}{% if selected %}{{ species_a.label }} vs {{ species_b.label }}{% else %}Species Comparison{% endif %}{% endblock %}
+
+{% block content %}
+<section class="page-intro page-intro-single">
+    <header>
+        <p class="eyebrow">Species comparison</p>
+        {% if selected %}
+        <h2>
+            <span class="series-key series-key-a"></span><span class="species-title">{{ species_a.label }}</span>
+            vs
+            <span class="series-key series-key-b"></span><span class="species-title">{{ species_b.label }}</span>
+        </h2>
+        {% else %}
+        <h2>Compare two species</h2>
+        {% endif %}
+        <p class="lead">
+            Gene-family expansions and contractions between two species, with every other species in the
+            dataset used as a reference to suggest which lineage changed.
+        </p>
+        <form class="control-row species-picker" method="get" action="{{ url_for('species_compare') }}" aria-label="Choose species">
+            <label><span><span class="series-key series-key-a"></span>Species A</span>
+                {{ ui.species_select('pick-a', 'a', species_options, selected=species_a.name if species_a else None, placeholder='Choose a species') }}
+            </label>
+            <button type="button" class="btn btn-outline-secondary" id="swap-species" aria-label="Swap species A and B">Swap</button>
+            <label><span><span class="series-key series-key-b"></span>Species B</span>
+                {{ ui.species_select('pick-b', 'b', species_options, selected=species_b.name if species_b else None, placeholder='Choose a species') }}
+            </label>
+            <button type="submit" class="btn btn-primary">Compare</button>
+        </form>
+    </header>
+</section>
+
+{% if not selected %}
+<section class="helper-note">
+    Choose two different species above to compare their gene families. For example, compare a cephalopod
+    with a vertebrate to see which families each lineage has expanded.
+</section>
+{% else %}
+
+<section class="stat-row" aria-label="Comparison summary">
+    {{ ui.stat_tile('stat-shared', 'Shared families') }}
+    {{ ui.stat_tile('stat-one-to-one', 'One-to-one families') }}
+    {{ ui.stat_tile('stat-higher-a', 'Larger in A', key='a') }}
+    {{ ui.stat_tile('stat-higher-b', 'Larger in B', key='b') }}
+    {{ ui.stat_tile('stat-only-a', 'Only in A', key='a') }}
+    {{ ui.stat_tile('stat-only-b', 'Only in B', key='b') }}
+</section>
+
+<h3 class="section-heading">Expansions and contractions</h3>
+<p class="section-lead">
+    A shared family counts as larger in one species when it clears both thresholds below. The thresholds
+    apply to every chart and table in this section.
+</p>
+<nav class="control-row" aria-label="Difference thresholds">
+    <label>Minimum fold difference
+        <select class="form-control" id="min-fold">
+            <option value="0.585">1.5 ×</option>
+            <option value="1" selected>2 ×</option>
+            <option value="1.585">3 ×</option>
+            <option value="2">4 ×</option>
+        </select>
+    </label>
+    <label>Minimum copy difference
+        <select class="form-control" id="min-diff">
+            <option value="1">1 gene</option>
+            <option value="2" selected>2 genes</option>
+            <option value="3">3 genes</option>
+            <option value="5">5 genes</option>
+            <option value="10">10 genes</option>
+        </select>
+    </label>
+    <details class="reference-picker" id="reference-picker"></details>
+</nav>
+
+<section class="chart-grid">
+    {{ ui.chart_card(
+        'chart-landscape',
+        'Copy-number landscape',
+        '',
+        'Each cell counts the orthogroups with that many copies in species A (across) and species B (up). Families on the diagonal have equal copy number; cells below it are larger in A and cells above it are larger in B. Click a cell to list its families.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-polarity',
+        'Which lineage changed?',
+        '',
+        'Each bubble is a group of orthogroups with the same copy numbers. Position shows copy number in each species relative to the reference median (the other species that carry the family). Right of zero means A has more copies than the reference; above zero means B does. Bubbles on the diagonal changed equally in both. Click a bubble to list its families.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-ratio',
+        'How large are the differences?',
+        '',
+        'Shared families with unequal copy number, binned by log2((A + 1) / (B + 1)). Vertical lines mark the fold threshold chosen above.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-classes',
+        'Orthology relationships',
+        'Orthogroups by copy-number relationship between the two species.',
+        'One-to-one families have a single gene in each species. One-to-many and many-to-one families have duplicated in one species only.'
+    ) }}
+</section>
+
+<h3 class="section-heading" id="families">Families that differ</h3>
+<p class="section-lead">
+    Select a row to see the family in every species. The likely change is inferred from the reference
+    median and is a suggestion, not a reconciliation.
+</p>
+<nav class="tab-row" id="family-tabs" role="tablist" aria-label="Family list">
+    <button type="button" role="tab" data-value="higher_a" aria-selected="true">Larger in A</button>
+    <button type="button" role="tab" data-value="higher_b" aria-selected="false">Larger in B</button>
+    <button type="button" role="tab" data-value="only_a" aria-selected="false">Only in A</button>
+    <button type="button" role="tab" data-value="only_b" aria-selected="false">Only in B</button>
+    <button type="button" role="tab" data-value="selection" aria-selected="false" hidden>Chart selection</button>
+</nav>
+<section class="og-layout">
+    <section class="og-table-wrap" id="family-table"><p class="chart-status">Loading…</p></section>
+    <aside class="profile-panel">
+        {{ ui.chart_card('chart-profile', 'Copy number across species', 'Select an orthogroup.') }}
+    </aside>
+</section>
+
+<h3 class="section-heading">Protein domain families</h3>
+<p class="section-lead">
+    An independent view from domain annotation: the number of genes carrying each domain in the two
+    species. Shown when both species have domain annotations loaded.
+</p>
+<nav class="control-row" id="domain-controls" aria-label="Domain database" hidden>
+    <label>Domain database
+        <select class="form-control" id="domain-database"></select>
+    </label>
+</nav>
+<section class="chart-grid" id="domain-section">
+    {{ ui.chart_card(
+        'chart-domain-scatter',
+        'Domain family size in each species',
+        '',
+        'Each bubble is one or more domain families with the same gene counts in the two species. Families below the diagonal are larger in A; families above it are larger in B.'
+    ) }}
+    {{ ui.chart_card('chart-domain-table', 'Most different domain families', '') }}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{{ ui.cx_scripts() }}
+<script>
+    CX.page = {{ {'a': species_a, 'b': species_b, 'selected': selected} | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/species-compare.js') }}"></script>
+{% endblock %}

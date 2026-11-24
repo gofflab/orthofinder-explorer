@@ -1,0 +1,601 @@
+/*
+ * Chart tokens and components for the Species and Species Comparison pages.
+ *
+ * Every color used by the d3 charts is declared here as a custom property and
+ * read from JavaScript at render time, so the palette can be retuned in one
+ * place without touching chart code.
+ *
+ * The data colors are a validated set: the A/B pair and the de-emphasis gray
+ * keep their separation under protanopia and deuteranopia, and the ordinal
+ * ramp is a single hue with monotone lightness.  Re-check any replacement
+ * values for colorblind separation and for at least 3:1 contrast against
+ * --chart-surface before changing them.
+ */
+:root {
+    /* Chrome */
+    --chart-surface: var(--color-panel);
+    --chart-ink: var(--color-ink);
+    --chart-ink-secondary: var(--color-muted);
+    --chart-grid: var(--color-border);
+    --chart-axis: #c3c8d2;
+
+    /* Identity: species A (or the focal species) and species B */
+    --chart-series-a: #2a78d6;
+    --chart-series-b: #eb6834;
+    /* De-emphasis: everything that is context rather than the subject */
+    --chart-neutral: #8b95a1;
+    --chart-neutral-strong: #3f4853;
+
+    /* Ordinal ramp: conservation breadth, narrowest to broadest */
+    --chart-ordinal-1: #86b6ef;
+    --chart-ordinal-2: #3987e5;
+    --chart-ordinal-3: #1c5cab;
+    --chart-ordinal-4: #0d366b;
+    --chart-unassigned: #aab2bc;
+
+    /* Sequential ramps (low, mid, high) for heatmaps */
+    --chart-seq-a-low: #cde2fb;
+    --chart-seq-a-mid: #3987e5;
+    --chart-seq-a-high: #0d366b;
+    --chart-seq-b-low: #fbdccd;
+    --chart-seq-b-mid: #eb6834;
+    --chart-seq-b-high: #7a2c0c;
+    --chart-seq-neutral-low: #e6e9ee;
+    --chart-seq-neutral-mid: #8b95a1;
+    --chart-seq-neutral-high: #3f4853;
+
+    /* Text placed inside a filled mark */
+    --chart-on-dark: #ffffff;
+    --chart-on-light: var(--color-ink);
+
+    --chart-font-size: 12px;
+    --chart-gap: var(--space-4);
+}
+
+/* ---- Layout ----------------------------------------------------------- */
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--chart-gap);
+    margin-bottom: var(--chart-gap);
+    align-items: start;
+}
+
+.chart-grid-single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.section-heading {
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-1);
+}
+
+.section-lead {
+    color: var(--color-muted);
+    margin-bottom: var(--space-3);
+    max-width: 70ch;
+}
+
+/* ---- Stat tiles ------------------------------------------------------- */
+
+.stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--chart-gap);
+}
+
+.stat-tile {
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    box-shadow: var(--shadow-subtle);
+}
+
+.stat-tile .stat-label {
+    margin: 0;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    font-weight: 600;
+}
+
+.stat-tile .stat-value {
+    margin: 2px 0 0;
+    font-size: 1.6rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-ink);
+}
+
+.stat-tile .stat-note {
+    margin: 2px 0 0;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+}
+
+/* A small key that ties a tile to a series color without coloring its text. */
+.stat-tile .stat-key,
+.series-key {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: baseline;
+}
+
+.series-key-a { background: var(--chart-series-a); }
+.series-key-b { background: var(--chart-series-b); }
+.series-key-neutral { background: var(--chart-neutral); }
+
+/* ---- Chart cards ------------------------------------------------------ */
+
+.chart-card {
+    background: var(--chart-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-subtle);
+    margin: 0;
+    min-width: 0;
+}
+
+.chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.chart-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.chart-subtitle {
+    margin: 2px 0 0;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+    line-height: 1.4;
+}
+
+.chart-table-toggle {
+    flex: none;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+}
+
+.chart-body {
+    position: relative;
+    min-height: 60px;
+}
+
+.chart-body svg {
+    display: block;
+    max-width: 100%;
+    font-family: var(--font-body);
+    font-size: var(--chart-font-size);
+}
+
+.chart-status {
+    color: var(--color-muted);
+    font-size: 0.85rem;
+    margin: var(--space-2) 0;
+}
+
+.chart-table {
+    max-height: 360px;
+    overflow: auto;
+}
+
+.chart-table table,
+.data-table {
+    width: 100%;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.chart-caption {
+    margin-top: var(--space-2);
+    font-size: 0.78rem;
+    color: var(--color-muted);
+}
+
+/* SVG text roles: text always wears ink tokens, never a series color. */
+.chart-body .axis-label,
+.chart-body .tick-label {
+    fill: var(--chart-ink-secondary);
+}
+
+.chart-body .mark-label {
+    fill: var(--chart-ink);
+}
+
+.chart-body .species-name,
+.species-name {
+    font-style: italic;
+}
+
+.chart-body .grid-line {
+    stroke: var(--chart-grid);
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.chart-body .axis-line {
+    stroke: var(--chart-axis);
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.chart-body .annotation {
+    fill: var(--chart-ink-secondary);
+    font-size: 11px;
+}
+
+.chart-body .hit {
+    fill: transparent;
+    cursor: default;
+}
+
+.chart-body .hit.is-clickable {
+    cursor: pointer;
+}
+
+.chart-body .hit:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+}
+
+.chart-body .is-hovered {
+    filter: brightness(1.12);
+}
+
+.chart-body .tree-link {
+    fill: none;
+    stroke: var(--chart-axis);
+    stroke-width: 1.5;
+}
+
+/* ---- Legends ---------------------------------------------------------- */
+
+.chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px var(--space-3);
+    margin: 0 0 var(--space-2);
+    padding: 0;
+    list-style: none;
+    font-size: 0.78rem;
+    color: var(--color-muted);
+}
+
+.chart-legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: none;
+}
+
+.legend-ramp {
+    width: 72px;
+    height: 10px;
+    border-radius: 3px;
+    flex: none;
+}
+
+/* ---- Tooltip ---------------------------------------------------------- */
+
+.chart-tooltip {
+    position: absolute;
+    z-index: 30;
+    pointer-events: none;
+    max-width: 280px;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+    box-shadow: var(--shadow-subtle);
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--color-muted);
+}
+
+.chart-tooltip[hidden] {
+    display: none;
+}
+
+.chart-tooltip .tooltip-title {
+    display: block;
+    color: var(--color-ink);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.chart-tooltip .tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.chart-tooltip .tooltip-value {
+    color: var(--color-ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Controls --------------------------------------------------------- */
+
+.control-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.control-row label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.control-row select.form-control {
+    min-width: 160px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.88rem;
+}
+
+.species-picker select.form-control {
+    min-width: 230px;
+}
+
+.reference-picker {
+    position: relative;
+    font-size: 0.82rem;
+    color: var(--color-muted);
+}
+
+.reference-picker summary {
+    cursor: pointer;
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-panel);
+    font-weight: 600;
+}
+
+.reference-picker .reference-list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 260px;
+    max-height: 300px;
+    overflow: auto;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-panel);
+    box-shadow: var(--shadow-subtle);
+}
+
+.reference-picker .reference-list label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    font-weight: 400;
+    color: var(--color-ink);
+    padding: 2px 0;
+}
+
+/* Help bubbles in chart headings are anchored to the card header rather than
+   to the "?" button, so they can never extend past the card (or the viewport
+   on narrow screens). */
+.chart-header {
+    position: relative;
+}
+
+.chart-title .help-tooltip {
+    position: static;
+}
+
+.chart-title .help-bubble {
+    left: 0;
+    right: auto;
+    top: 100%;
+    max-width: min(340px, 100%);
+}
+
+.segmented {
+    display: inline-flex;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--color-panel);
+}
+
+.segmented button {
+    border: 0;
+    background: transparent;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.segmented button + button {
+    border-left: 1px solid var(--color-border);
+}
+
+.segmented button[aria-pressed="true"] {
+    background: rgba(var(--color-accent-rgb), 0.12);
+    color: var(--color-accent-strong);
+}
+
+.tab-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.tab-row button {
+    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.tab-row button[aria-selected="true"] {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-panel);
+}
+
+.tab-row .tab-count {
+    font-weight: 400;
+    opacity: 0.85;
+    margin-left: 4px;
+}
+
+/* ---- Orthogroup tables and the profile panel -------------------------- */
+
+.og-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: var(--chart-gap);
+    align-items: start;
+    margin-bottom: var(--chart-gap);
+}
+
+.og-table-wrap {
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.data-table th {
+    white-space: nowrap;
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.data-table th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+}
+
+.data-table th[aria-sort="ascending"]::after { content: " \25B2"; }
+.data-table th[aria-sort="descending"]::after { content: " \25BC"; }
+
+.data-table td.numeric,
+.data-table th.numeric {
+    text-align: right;
+}
+
+.data-table th.species-name {
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.data-table td.orthogroup-cell {
+    max-width: 230px;
+}
+
+.data-table .annotation-line {
+    display: block;
+    color: var(--color-muted);
+    font-size: 0.76rem;
+    line-height: 1.3;
+}
+
+.data-table tbody tr {
+    cursor: pointer;
+}
+
+.data-table tbody tr.is-selected {
+    background: rgba(var(--color-accent-rgb), 0.14);
+}
+
+.table-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: 0.8rem;
+    color: var(--color-muted);
+}
+
+.table-footer .btn {
+    padding: 0.25rem 0.7rem;
+    font-size: 0.8rem;
+}
+
+.tab-description {
+    margin: 0 0 var(--space-2);
+    font-size: 0.82rem;
+    color: var(--color-muted);
+}
+
+.profile-panel {
+    position: sticky;
+    top: var(--space-3);
+}
+
+.badge-soft {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: var(--color-accent-soft);
+    color: var(--color-accent-strong);
+    margin-right: 4px;
+}
+
+.clade-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: var(--chart-neutral);
+}
+
+.page-intro .species-title {
+    font-style: italic;
+}
+
+@media (max-width: 991px) {
+    .chart-grid,
+    .og-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .profile-panel {
+        position: static;
+    }
+}
