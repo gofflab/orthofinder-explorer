@@ -57,6 +57,9 @@ Table overview
    * - ``ingest_runs``
      - Stage 1
      - Audit log of every ingest run with config and record counts.
+   * - ``species_tree``
+     - Stage 1
+     - Rooted species tree (Newick) used by the species pages.
    * - ``transcripts``
      - Stage 2
      - One row per transcript isoform, parsed from per-species GTF/GFF3 files.
@@ -267,6 +270,35 @@ row is retained.
      - TEXT
      - Full merged config dictionary serialised as JSON.
 
+``species_tree``
+~~~~~~~~~~~~~~~~
+
+Rooted species tree from the OrthoFinder run.  The species pages use it to
+order species and to assign gene-age strata (see :doc:`species-pages`).  Rows
+are append-only and the application reads the most recent one.  Populated by
+``ingest_orthofinder.py``; for databases built before this table existed, load
+the tree with ``scripts/upgrade_db.py --species-tree``.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 12 63
+
+   * - Column
+     - Type
+     - Description
+   * - ``id``
+     - INTEGER PK
+     - Auto-increment.
+   * - ``newick``
+     - TEXT
+     - Newick string.  Leaf names must equal ``species.species_name``.
+   * - ``source``
+     - TEXT
+     - Path of the file the tree was read from.
+   * - ``created_at``
+     - DATETIME
+     - UTC load time.
+
 Stage 2 tables
 --------------
 
@@ -475,22 +507,34 @@ InterProScan and HMMER output).
      - Pipe-separated pathway annotations (e.g. ``Reactome: R-HSA-1``).
        Populated when InterProScan is run with ``--pathways``.
 
-Recommended indexes
--------------------
+Indexes
+-------
 
-SQLite does not create indexes on foreign key columns automatically.  Add these
-after the initial data load and before enabling the web app for interactive
-use:
+SQLite does not create indexes on foreign key columns automatically.  The
+indexes that the web app relies on are declared on the models, so a database
+built with the current ingest scripts already has them:
+
+.. code-block:: text
+
+   ix_genes_species_id         genes (species_id)
+   ix_genes_orthogroup_id      genes (orthogroup_id)
+   ix_sequences_species_id     sequences (species_id)
+   ix_sequences_gene_id        sequences (gene_id)
+   ix_transcripts_species_id   transcripts (species_id)
+   ix_transcripts_gene_id      transcripts (gene_id)
+   ix_domains_species_id       protein_domains (species_id)
+   ix_domains_gene_id          protein_domains (gene_id)
+
+A database built by an older version can be brought up to date without
+re-ingesting.  The script is idempotent and only creates what is missing::
+
+    python scripts/upgrade_db.py --db instance/orthofinder_new.db
+
+The remaining indexes below are optional and useful mainly for ad hoc SQL:
 
 .. code-block:: sql
 
-   -- Gene lookups
-   CREATE INDEX IF NOT EXISTS ix_genes_species_id      ON genes (species_id);
-   CREATE INDEX IF NOT EXISTS ix_genes_orthogroup_id   ON genes (orthogroup_id);
-
-   -- Transcript lookups
-   CREATE INDEX IF NOT EXISTS ix_transcripts_gene_id     ON transcripts (gene_id);
-   CREATE INDEX IF NOT EXISTS ix_transcripts_species_id  ON transcripts (species_id);
+   -- Transcript lookups by the raw GTF gene identifier
    CREATE INDEX IF NOT EXISTS ix_transcripts_gtf_gene_id ON transcripts (gtf_gene_id);
 
    -- Feature range queries (species + scaffold + position)
@@ -499,8 +543,7 @@ use:
    CREATE INDEX IF NOT EXISTS ix_features_seqname_start
        ON transcript_features (species_id, seqname, start, end);
 
-   -- Domain lookups
-   CREATE INDEX IF NOT EXISTS ix_domains_gene_id        ON protein_domains (gene_id);
+   -- Domain lookups by transcript or accession
    CREATE INDEX IF NOT EXISTS ix_domains_transcript_id  ON protein_domains (transcript_id);
    CREATE INDEX IF NOT EXISTS ix_domains_accession      ON protein_domains (domain_accession);
    CREATE INDEX IF NOT EXISTS ix_domains_interpro       ON protein_domains (interpro_accession);

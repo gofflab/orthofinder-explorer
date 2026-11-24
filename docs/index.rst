@@ -24,6 +24,8 @@ Project layout
 
 - ``scripts/ingest_orthofinder.py``: Stage 1 ingestion CLI (OrthoFinder outputs → DB).
 - ``scripts/ingest_species_annotations.py``: Stage 2 ingestion CLI (GTF, mRNA, domains → DB).
+- ``scripts/upgrade_db.py``: Adds missing tables, indexes, and the species tree to an existing DB.
+- ``scripts/build_demo_db.py``: Builds a small synthetic DB for local UI development.
 - ``config/orthofinder_ingest.example.json``: Example Stage 1 config.
 - ``config/species_annotations.example.json``: Example Stage 2 config.
 - ``app/``: Flask app, templates, and static assets.
@@ -43,6 +45,7 @@ Contents
    species-annotations
    database
    app
+   species-pages
    deployment
    troubleshooting
    development
