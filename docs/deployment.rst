@@ -53,6 +53,26 @@ You only need to edit the Docker ingest config when you want to change
 non-default settings like ``mode``, ``forced_clades``, or ``db_path``. The helper
 script overrides ``input_dir`` and ``dataset_name`` at runtime.
 
+Upgrade an existing database
+----------------------------
+
+After updating the code on a host whose database was built by an older
+version, run the upgrade script once.  It adds missing tables and indexes and
+loads the species tree used by the species pages (see :doc:`species-pages`).
+Rebuild the ingest image first so that it contains the script:
+
+.. code-block:: bash
+
+   docker compose --profile ingest build ingest
+
+.. code-block:: bash
+
+   docker compose --profile ingest run --rm \
+     -v /path/to/Results_Feb21:/input:ro \
+     --entrypoint python ingest scripts/upgrade_db.py \
+     --db /data/orthofinder_new.db \
+     --species-tree /input/Species_Tree/SpeciesTree_rooted.txt
+
 To restart the web container after a rebuild or ingest:
 
 .. code-block:: bash

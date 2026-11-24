@@ -15,7 +15,8 @@ from sqlalchemy.orm import sessionmaker
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from app.models import Base, Orthogroup, Gene, Sequence, Species, IngestRun
+from app.models import Base, Orthogroup, Gene, Sequence, Species, IngestRun, SpeciesTree
+from app.schema import ensure_indexes
 
 DEFAULTS = {
     "orthogroups_file": "Phylogenetic_Hierarchical_Orthogroups/N0.tsv",
@@ -691,8 +692,8 @@ def main():
     if args.verbose:
         print("Computing species color palette...")
     with open(species_tree_file, "r") as handle:
-        species_tree = handle.read().strip()
-    species_tree = Tree(species_tree)
+        species_tree_newick = handle.read().strip()
+    species_tree = Tree(species_tree_newick)
     species_names = set(species_df["species"].tolist())
     clade_min_count = int(config.get("clade_min_count", 5))
     clade_max_count = int(config.get("clade_max_count", 8))
@@ -729,6 +730,8 @@ def main():
     else:
         print("Appending to existing database...")
         Base.metadata.create_all(engine)
+        # create_all skips indexes on tables that already exist.
+        ensure_indexes(engine)
 
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -746,6 +749,18 @@ def main():
             for _, row in species_df.iterrows()
         ),
     )
+
+    # Keep the rooted species tree so the web app can order species and
+    # compute clade-aware statistics (phylostrata) without the input files.
+    print("Loading species tree...")
+    session.add(
+        SpeciesTree(
+            newick=species_tree_newick,
+            source=str(species_tree_file),
+            created_at=datetime.utcnow(),
+        )
+    )
+    session.commit()
 
     print("Loading genes...")
     seen_gene_ids = set()

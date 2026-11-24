@@ -142,3 +142,8 @@ def register_routes(app):
                 url = url_for(rule.endpoint, **(rule.defaults or {}))
                 links.append((url, rule.endpoint))
             # links is now a list of url, endpoint tuples
+
+    # Species and Species Comparison pages live in their own module.
+    from .species_routes import register_species_routes
+    register_species_routes(app)
+

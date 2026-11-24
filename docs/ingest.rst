@@ -34,7 +34,8 @@ Modes
 
 ``rebuild`` (recommended for any new OrthoFinder run)
     Drops all existing tables (``orthogroups``, ``genes``, ``sequences``,
-    ``species``, ``gene_key_lookup``, ``ingest_runs``) and recreates them.
+    ``species``, ``gene_key_lookup``, ``ingest_runs``, ``species_tree``) and
+    recreates them.
     All previously ingested data is lost.  Use this mode whenever you re-run
     OrthoFinder, since every run reassigns species and gene IDs.
 

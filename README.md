@@ -68,6 +68,26 @@ Then visit:
 http://localhost:8080
 ```
 
+### Species pages
+The Species (`/species`) and Species Comparison (`/compare`) pages summarise
+gene-family content per species and highlight expansions and contractions
+between any two species. They work on any existing database. To enable the
+tree-ordered and gene-age views, and to add the indexes they benefit from, run
+the upgrade script once against a database built by an older version. Rebuild
+the ingest image first so that it contains the script:
+```bash
+docker compose --profile ingest build ingest
+```
+```bash
+docker compose --profile ingest run --rm \
+  -v /path/to/OrthoFinder/Results_XXXX:/input:ro \
+  --entrypoint python ingest scripts/upgrade_db.py \
+  --db /data/orthofinder_new.db \
+  --species-tree /input/Species_Tree/SpeciesTree_rooted.txt
+```
+New ingests store the species tree and create the indexes automatically. See
+`docs/species-pages.rst` for how each statistic is defined.
+
 ## Local development (non-Docker)
 Use the ingestion script to build or append to the SQLite database without editing code paths.
 
@@ -79,6 +99,13 @@ python scripts/ingest_orthofinder.py --config config/orthofinder_ingest.example.
 To override the DB used by the Flask app, set:
 ```bash
 export ORTHOFINDER_DB_PATH=instance/orthofinder_new.db
+```
+To try the UI without real data, build a small synthetic database:
+```bash
+python scripts/build_demo_db.py --db instance/demo.db
+```
+```bash
+ORTHOFINDER_DB_PATH=$PWD/instance/demo.db python run.py
 ```
 To enable Google Analytics (GA4), set:
 ```bash

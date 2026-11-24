@@ -11,6 +11,14 @@ Routes
 - ``/orthogroup/<id>``: Orthogroup detail view.
 - ``/gene/<id>``: Gene detail view and sequence display.
 - ``/gene_search``: Gene search form and results.
+- ``/species``: Overview of every species in the dataset.
+- ``/species/<name>``: Summary statistics, plots, and notable orthogroups for
+  one species.
+- ``/compare?a=<name>&b=<name>``: Gene-family expansions and contractions
+  between two species.
+
+The species pages and the JSON API behind them are described in
+:doc:`species-pages`.
 
 Gene tree links
 ---------------

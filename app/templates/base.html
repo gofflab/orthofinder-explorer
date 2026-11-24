@@ -8,6 +8,7 @@
     <!--<link rel="stylesheet" href="{{ url_for('static', filename='node_modules/phylotree/dist/phylotree.css') }}">-->
     <link rel="stylesheet" href="{{ url_for('static', filename='phylotree-styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='charts.css') }}">
     <script src="{{ url_for('static', filename='node_modules/jquery/dist/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='node_modules/bootstrap/dist/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='node_modules/d3/dist/d3.min.js') }}"></script>
@@ -40,6 +41,12 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path.startswith('/gene') %}active{% endif %}" href="{{ url_for('gene_search') }}">Gene Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path.startswith(url_for('species_index')) %}active{% endif %}" href="{{ url_for('species_index') }}">Species</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path.startswith(url_for('species_compare')) %}active{% endif %}" href="{{ url_for('species_compare') }}">Species Comparison</a>
                     </li>
                     <!-- Add more routes as needed -->
                 </ul>

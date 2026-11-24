@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% import "_species_macros.html" as ui %}
+
+{% block title %}{{ species.label }}{% endblock %}
+
+{% block content %}
+<section class="page-intro">
+    <header>
+        <p class="eyebrow">Species</p>
+        <h2 class="species-title">{{ species.label }}</h2>
+        <p class="lead" id="species-lead">
+            Gene-family content, conservation and annotation quality for this species, relative to every other
+            species in the OrthoFinder run.
+        </p>
+    </header>
+    <aside class="tip-card">
+        <h3 class="h6">Jump to</h3>
+        <nav class="control-row" id="species-nav" aria-label="Species navigation">
+            <label>Another species
+                {{ ui.species_select('switch-species', 'species', species_options, selected=species.name) }}
+            </label>
+            <label>Compare with
+                {{ ui.species_select('compare-with', 'b', species_options, placeholder='Choose a species') }}
+            </label>
+        </nav>
+    </aside>
+</section>
+
+<section class="stat-row" aria-label="Summary statistics">
+    {{ ui.stat_tile('stat-proteins', 'Proteins') }}
+    {{ ui.stat_tile('stat-assigned', 'In orthogroups') }}
+    {{ ui.stat_tile('stat-orthogroups', 'Orthogroups') }}
+    {{ ui.stat_tile('stat-specific', 'Species-specific families') }}
+    {{ ui.stat_tile('stat-core', 'Core family coverage') }}
+    {{ ui.stat_tile('stat-length', 'Median protein length') }}
+</section>
+
+<h3 class="section-heading">Conservation and gene age</h3>
+<p class="section-lead">
+    How widely this species' gene families are shared, and where along its lineage they first appear.
+</p>
+<nav class="control-row" aria-label="Chart units">
+    <label>Count by
+        <span class="segmented" id="unit-toggle">
+            <button type="button" data-value="orthogroups" aria-pressed="true">Orthogroups</button>
+            <button type="button" data-value="genes" aria-pressed="false">Genes</button>
+        </span>
+    </label>
+</nav>
+<section class="chart-grid">
+    {{ ui.chart_card(
+        'chart-breadth',
+        'How many species share each family?',
+        '',
+        'Each of this species\' orthogroups is counted once, at the number of species represented in it. The bar at 1 holds species-specific families; the bar at the far right holds families found in every species.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-strata',
+        'Gene age along the lineage',
+        '',
+        'Each family is dated to the deepest split of the species tree that it spans. Rows run from the root of the tree (oldest, top) to this species alone (youngest, bottom), and each row is labelled with the lineage that joins at that split. Click a row to list its families below. This is a presence/absence inference, so incomplete annotations make families look younger than they are.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-copy',
+        'How large are the families?',
+        '',
+        'Orthogroups binned by the number of gene copies this species has in them.'
+    ) }}
+    {{ ui.chart_card(
+        'chart-shared',
+        'Families shared with each other species',
+        'Click a bar to compare the two species.',
+        'Number of orthogroups that contain at least one gene from both species.'
+    ) }}
+</section>
+
+<h3 class="section-heading">How this species compares</h3>
+<p class="section-lead">The same measure for every species in the dataset, with this species highlighted.</p>
+<nav class="control-row" aria-label="Comparison measure">
+    <label>Measure
+        <select class="form-control" id="context-metric">
+            <option value="proteins">Proteins</option>
+            <option value="pct_assigned">Share of genes in orthogroups</option>
+            <option value="orthogroups">Orthogroups</option>
+            <option value="species_specific_orthogroups">Species-specific families</option>
+            <option value="core_coverage" selected>Core family coverage</option>
+            <option value="median_protein_length">Median protein length</option>
+        </select>
+    </label>
+</nav>
+<section class="chart-grid chart-grid-single">
+    {{ ui.chart_card('chart-context', 'Across all species', '') }}
+</section>
+
+<h3 class="section-heading" id="notable">Notable orthogroups</h3>
+<p class="section-lead">
+    Families that set this species apart. Copy number is compared with the median among the other species
+    that carry the family; select a row to see the family in every species.
+</p>
+<nav class="control-row" aria-label="Orthogroup filters">
+    <label>Shared with at least
+        <select class="form-control" id="min-other">
+            <option value="1">1 other species</option>
+            <option value="2">2 other species</option>
+            <option value="3" selected>3 other species</option>
+            <option value="5">5 other species</option>
+            <option value="10">10 other species</option>
+        </select>
+    </label>
+    <details class="reference-picker" id="reference-picker"></details>
+</nav>
+<nav class="tab-row" id="notable-tabs" role="tablist" aria-label="Orthogroup category">
+    <button type="button" role="tab" data-value="expanded" aria-selected="true">Expanded</button>
+    <button type="button" role="tab" data-value="specific" aria-selected="false">Species-specific</button>
+    <button type="button" role="tab" data-value="contracted" aria-selected="false">Contracted</button>
+    <button type="button" role="tab" data-value="absent" aria-selected="false">Missing here</button>
+    <button type="button" role="tab" data-value="stratum" aria-selected="false" hidden>Gene-age stratum</button>
+</nav>
+<p class="tab-description" id="notable-description"></p>
+<section class="og-layout">
+    <section class="og-table-wrap" id="notable-table"><p class="chart-status">Loading…</p></section>
+    <aside class="profile-panel">
+        {{ ui.chart_card('chart-profile', 'Copy number across species', 'Select an orthogroup.') }}
+    </aside>
+</section>
+
+<h3 class="section-heading">Annotation</h3>
+<p class="section-lead">
+    What the gene models and functional annotations look like. Transcript and domain panels appear once the
+    optional per-species annotation files have been loaded.
+</p>
+<section class="chart-grid chart-grid-single">
+    {{ ui.chart_card(
+        'chart-length',
+        'Protein length',
+        '',
+        'Distribution of predicted protein lengths. A heavy left shoulder (many proteins under 100 aa) usually means fragmented gene models.'
+    ) }}
+</section>
+
+<h4 class="section-heading">Transcripts</h4>
+<section class="stat-row" id="transcript-stats" hidden>
+    {{ ui.stat_tile('stat-transcripts', 'Transcripts') }}
+    {{ ui.stat_tile('stat-tx-genes', 'Genes with transcripts') }}
+    {{ ui.stat_tile('stat-isoforms', 'Isoforms per gene') }}
+    {{ ui.stat_tile('stat-monoexonic', 'Single-exon transcripts') }}
+    {{ ui.stat_tile('stat-cds', 'Median CDS length') }}
+</section>
+<section class="chart-grid" id="transcript-charts">
+    {{ ui.chart_card('chart-isoforms', 'Isoforms per gene', '') }}
+    {{ ui.chart_card('chart-exons', 'Exons per transcript', '') }}
+</section>
+
+<h4 class="section-heading">Protein domains</h4>
+<section class="stat-row" id="domain-stats" hidden>
+    {{ ui.stat_tile('stat-domain-coverage', 'Proteins with a domain') }}
+    {{ ui.stat_tile('stat-domain-hits', 'Domain hits') }}
+    {{ ui.stat_tile('stat-domain-go', 'Proteins with GO terms') }}
+</section>
+<nav class="control-row" id="domain-controls" aria-label="Domain database" hidden>
+    <label>Domain database
+        <select class="form-control" id="domain-database"></select>
+    </label>
+</nav>
+<section class="chart-grid" id="domain-charts">
+    {{ ui.chart_card('chart-domains', 'Largest domain families', '') }}
+    {{ ui.chart_card(
+        'chart-domain-coverage',
+        'Domain coverage by conservation',
+        'Share of genes with at least one domain hit.',
+        'Genes are grouped by how widely their orthogroup is shared. Lineage-restricted genes normally have fewer recognisable domains; a species-specific class with almost none can also indicate spurious gene models.'
+    ) }}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{{ ui.cx_scripts() }}
+<script>
+    CX.page = {{ {'species': species} | tojson }};
+</script>
+<script src="{{ url_for('static', filename='js/species-page.js') }}"></script>
+{% endblock %}

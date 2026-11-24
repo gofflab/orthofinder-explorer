@@ -49,6 +49,7 @@ from app.models import (
     Transcript,
     TranscriptFeature,
 )
+from app.schema import ensure_indexes
 
 logging.basicConfig(
     level=logging.INFO,
@@ -885,6 +886,7 @@ def main(argv=None):
 
     engine = create_engine(f"sqlite:///{db_path}")
     Base.metadata.create_all(engine)   # create new tables if not present
+    ensure_indexes(engine)             # create_all skips indexes on existing tables
     # Migrate existing databases that predate the mrna_sequence column
     ensure_column(engine, "transcripts", "mrna_sequence", "TEXT")
     Session = sessionmaker(bind=engine)
