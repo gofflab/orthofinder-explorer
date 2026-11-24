@@ -1,7 +1,7 @@
 #!usr/bin/env python
 #from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import Column, DateTime, Float, Integer, String, Text, ForeignKey
+from sqlalchemy import Column, DateTime, Float, Index, Integer, String, Text, ForeignKey
 
 Base = declarative_base()
 
@@ -151,3 +151,34 @@ class ProteinDomain(Base):
 
     gene = relationship('Gene', foreign_keys=[gene_id])
     transcript = relationship('Transcript', back_populates='domains', foreign_keys=[transcript_id])
+
+
+class SpeciesTree(Base):
+    """Rooted species tree from the OrthoFinder run, stored as Newick.
+
+    The tree is needed at request time for clade-aware analyses (species
+    ordering, phylostratigraphy).  Rows are append-only; the application uses
+    the most recent one, so re-loading a tree never requires a delete.
+    """
+    __tablename__ = 'species_tree'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    newick = Column(Text, nullable=False)   # leaf names match species.species_name
+    source = Column(String)                 # file the tree was read from
+    created_at = Column(DateTime)           # UTC load time
+
+
+# ---------------------------------------------------------------------------
+# Indexes
+# ---------------------------------------------------------------------------
+# SQLite does not index foreign keys automatically.  Declaring the indexes
+# here means freshly built databases get them from ``create_all``; existing
+# databases can be upgraded with ``app.schema.ensure_indexes``.
+Index('ix_genes_species_id', Gene.species_id)
+Index('ix_genes_orthogroup_id', Gene.orthogroup_id)
+Index('ix_sequences_species_id', Sequence.species_id)
+Index('ix_sequences_gene_id', Sequence.gene_id)
+Index('ix_transcripts_species_id', Transcript.species_id)
+Index('ix_transcripts_gene_id', Transcript.gene_id)
+Index('ix_domains_species_id', ProteinDomain.species_id)
+Index('ix_domains_gene_id', ProteinDomain.gene_id)
